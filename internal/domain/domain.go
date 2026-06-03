@@ -189,6 +189,39 @@ type ConfidenceSnapshot struct {
 	CreatedAt     time.Time     `bson:"created_at" json:"created_at"`
 }
 
+// ─── Audio (Phase 9) ────────────────────────────────────────────────────────
+
+// Transcript sources.
+const (
+	TranscriptWhisper  = "whisper"
+	TranscriptProvided = "provided"
+)
+
+// FillerStat is the count of one filler word/phrase in an answer.
+type FillerStat struct {
+	Word  string `bson:"word" json:"word"`
+	Count int    `bson:"count" json:"count"`
+}
+
+// Transcript holds the transcript of one answer plus MEASURABLE-ONLY audio
+// signals. It deliberately avoids any inferred trait (honesty, intelligence,
+// personality) — only directly countable quantities are stored.
+type Transcript struct {
+	ID          bson.ObjectID `bson:"_id,omitempty" json:"id"`
+	InterviewID bson.ObjectID `bson:"interview_id" json:"interview_id"`
+	Turn        int           `bson:"turn" json:"turn"`
+	Source      string        `bson:"source" json:"source"`
+	Text        string        `bson:"text" json:"text"`
+	DurationSec float64       `bson:"duration_sec" json:"duration_sec"`
+	WordCount   int           `bson:"word_count" json:"word_count"`
+	WPM         float64       `bson:"wpm" json:"wpm"` // speaking pace, words/min
+	FillerTotal int           `bson:"filler_total" json:"filler_total"`
+	FillerRate  float64       `bson:"filler_rate" json:"filler_rate"` // fillers per 100 words
+	Fillers     []FillerStat  `bson:"fillers" json:"fillers"`
+	LatencyMs   int           `bson:"latency_ms" json:"latency_ms"` // response latency, if provided
+	CreatedAt   time.Time     `bson:"created_at" json:"created_at"`
+}
+
 // ─── Final scores & report (Phases 6–7) ─────────────────────────────────────
 
 // CompetencyScore is the final rolled-up assessment of one competency, with all

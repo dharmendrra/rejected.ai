@@ -29,6 +29,11 @@ type Config struct {
 
 	MaxTokens   int     `json:"MAX_TOKENS"`
 	Temperature float64 `json:"TEMPERATURE"`
+
+	// Audio (Phase 9). When both are set, audio uploads are transcribed via a
+	// whisper.cpp CLI; otherwise callers supply transcripts directly.
+	WhisperBin   string `json:"WHISPER_BIN"`
+	WhisperModel string `json:"WHISPER_MODEL"`
 }
 
 // Load reads and parses the config file at path, then applies defaults and validation.

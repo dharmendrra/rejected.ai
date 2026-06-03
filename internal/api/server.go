@@ -15,6 +15,7 @@ import (
 	"github.com/dharmendra/rejected.ai/internal/evidence"
 	"github.com/dharmendra/rejected.ai/internal/interview"
 	"github.com/dharmendra/rejected.ai/internal/llm"
+	"github.com/dharmendra/rejected.ai/internal/media"
 	"github.com/dharmendra/rejected.ai/internal/recommendation"
 	"github.com/dharmendra/rejected.ai/internal/report"
 	"github.com/dharmendra/rejected.ai/internal/risk"
@@ -31,6 +32,7 @@ type Server struct {
 	Documents *documents.Service
 	Interview *interview.Service
 	Report    *report.Service
+	Media     *media.Service
 }
 
 // NewServer constructs a Server and the engine services it exposes.
@@ -45,6 +47,13 @@ func NewServer(cfg *config.Config, st *store.Store, provider *llm.Provider) *Ser
 	rk := risk.NewService(provider)
 	rec := recommendation.NewService(provider)
 
+	// Keep the interface nil (not a typed-nil) when whisper isn't configured,
+	// so media.Service can detect the absence correctly.
+	var transcriber media.Transcriber
+	if w := media.NewWhisperCpp(cfg.WhisperBin, cfg.WhisperModel); w != nil {
+		transcriber = w
+	}
+
 	return &Server{
 		Cfg:       cfg,
 		Store:     st,
@@ -52,6 +61,7 @@ func NewServer(cfg *config.Config, st *store.Store, provider *llm.Provider) *Ser
 		Documents: documents.NewService(provider, st),
 		Interview: interview.NewService(provider, st, cap, ev, conf, asm),
 		Report:    report.NewService(st, ev, conf, eval, sig, rk, rec),
+		Media:     media.NewService(st, transcriber),
 	}
 }
 
@@ -72,6 +82,10 @@ func (s *Server) Routes() http.Handler {
 	// Phase 7 — final report (generate / fetch cached).
 	mux.HandleFunc("POST /api/interviews/{id}/report", s.handleGenerateReport)
 	mux.HandleFunc("GET /api/interviews/{id}/report", s.handleGetReport)
+
+	// Phase 9 — audio: supply a transcript, or upload audio (if whisper configured).
+	mux.HandleFunc("POST /api/interviews/{id}/transcript", s.handleIngestTranscript)
+	mux.HandleFunc("POST /api/interviews/{id}/audio", s.handleIngestAudio)
 
 	return withLogging(withCORS(mux))
 }

@@ -55,11 +55,12 @@ func (s *Server) handleSubmitAnswer(w http.ResponseWriter, r *http.Request) {
 
 // interviewView is the read model returned by GET /api/interviews/{id}.
 type interviewView struct {
-	Interview  *domain.Interview           `json:"interview"`
-	Graphs     *domain.CapabilityGraphSet  `json:"graphs"`
-	Turns      []domain.Turn               `json:"turns"`
-	Evidence   []domain.EvidenceItem       `json:"evidence"`
-	Confidence []domain.ConfidenceSnapshot `json:"confidence"`
+	Interview   *domain.Interview           `json:"interview"`
+	Graphs      *domain.CapabilityGraphSet  `json:"graphs"`
+	Turns       []domain.Turn               `json:"turns"`
+	Evidence    []domain.EvidenceItem       `json:"evidence"`
+	Confidence  []domain.ConfidenceSnapshot `json:"confidence"`
+	Transcripts []domain.Transcript         `json:"transcripts"`
 }
 
 func (s *Server) handleGetInterview(w http.ResponseWriter, r *http.Request) {
@@ -86,6 +87,7 @@ func (s *Server) handleGetInterview(w http.ResponseWriter, r *http.Request) {
 	view.Turns = findAll[domain.Turn](ctx, s, store.CollQuestions, id, "turn")
 	view.Evidence = findAll[domain.EvidenceItem](ctx, s, store.CollEvidenceLedger, id, "turn")
 	view.Confidence = findAll[domain.ConfidenceSnapshot](ctx, s, store.CollConfidenceScores, id, "turn")
+	view.Transcripts = findAll[domain.Transcript](ctx, s, store.CollTranscripts, id, "turn")
 
 	writeJSON(w, http.StatusOK, view)
 }

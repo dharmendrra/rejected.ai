@@ -43,7 +43,7 @@ the evidence ledger.
 | `risk` | Missing / weak / JD-risk categorization | ✅ Phase 7 |
 | `recommendation` | Hire decision + reasoning + evidence citations | ✅ Phase 7 |
 | `report` | Orchestrates final scores + personas + signals + risk + recommendation | ✅ Phase 7 |
-| `media` | Audio (whisper.cpp) / video metadata | ⏳ Phase 9/10 |
+| `media` | Audio: measurable signals (WPM, fillers, latency) + pluggable whisper.cpp; video later | ✅ Phase 9 (audio) |
 | `learning` | Cross-interview trends, pattern detection, improvement | ⏳ Phase 11 |
 
 ## Data flow (target, Phases 1–7)

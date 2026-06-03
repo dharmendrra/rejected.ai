@@ -14,5 +14,8 @@
   "ANTHROPIC_MODEL": "claude-sonnet-4-6",
 
   "MAX_TOKENS": 4096,
-  "TEMPERATURE": 0.4
+  "TEMPERATURE": 0.4,
+
+  "WHISPER_BIN": "",
+  "WHISPER_MODEL": ""
 }

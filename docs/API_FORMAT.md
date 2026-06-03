@@ -185,6 +185,34 @@ Response `200`:
 Risk `category` is one of `missing` (never demonstrated), `weak` (attempted, low confidence),
 `jd_risk` (role-required but insufficiently validated).
 
+## Audio (Phase 9)
+
+Only **measurable** signals are computed — speaking pace, filler stats, word count, and
+(if provided) response latency. No inferred traits.
+
+### `POST /api/interviews/{id}/transcript`
+Supply a transcript; always available (no transcription engine needed).
+```json
+{ "turn": 1, "transcript": "Um, so I used a dedup key…", "duration_sec": 5, "latency_ms": 1200 }
+```
+Response `201`:
+```json
+{
+  "turn": 1, "source": "provided", "text": "...",
+  "duration_sec": 5, "word_count": 14, "wpm": 168,
+  "filler_total": 4, "filler_rate": 28.57,
+  "fillers": [ { "word": "um", "count": 1 }, { "word": "you know", "count": 1 } ],
+  "latency_ms": 1200
+}
+```
+
+### `POST /api/interviews/{id}/audio` (multipart)
+Field `file` = audio; optional form fields `turn`, `duration_sec`, `latency_ms`.
+Transcribes via whisper.cpp when `WHISPER_BIN` + `WHISPER_MODEL` are set; otherwise returns
+`501` directing you to the transcript endpoint. (whisper.cpp expects 16kHz mono WAV.)
+
+Transcripts appear in `GET /api/interviews/{id}` under `transcripts`.
+
 ## Error envelope
 
 All errors: `{ "error": "<message>" }` with the appropriate 4xx/5xx status.
