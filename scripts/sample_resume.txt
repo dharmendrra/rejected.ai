@@ -1,0 +1,20 @@
+Priya Nair
+Senior Software Engineer
+
+Summary:
+Backend engineer with 8 years building distributed systems, the last 4 in payments.
+Comfortable owning services end to end, from design through on-call.
+
+Experience:
+- Senior Engineer, FintechCo (2021–present): Owned the payment capture and ledger
+  services. Led the migration to a new settlement pipeline. Mentored 3 engineers.
+- Software Engineer, ShopScale (2017–2021): Built order processing and inventory
+  services on a high-traffic e-commerce platform.
+
+Technologies:
+- Go, Java, PostgreSQL, Kafka, Redis, AWS, Kubernetes, gRPC.
+
+Selected work:
+- Designed the payment capture flow handling millions of transactions per day.
+- Introduced structured logging and tracing to cut incident triage time.
+- Partnered with product to define settlement reconciliation rules.

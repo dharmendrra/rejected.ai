@@ -1,0 +1,19 @@
+# Local config (use config.example.json as the template)
+config.json
+
+# Build output
+/bin/
+rejected.ai
+*.out
+
+# Node / Next.js (web/)
+web/node_modules/
+web/.next/
+web/out/
+
+# OS
+.DS_Store
+
+# Uploaded artifacts / media
+/data/uploads/
+/data/media/

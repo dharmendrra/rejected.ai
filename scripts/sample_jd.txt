@@ -1,0 +1,26 @@
+Senior Backend Engineer — Payments Platform
+
+We are hiring a Senior Backend Engineer to own critical services in our payments
+platform. You will design and operate high-throughput, low-latency systems where
+correctness and reliability are non-negotiable.
+
+Responsibilities:
+- Design and own backend services for payment capture, settlement, and reconciliation.
+- Ensure exactly-once processing and safe handling of retries and duplicate requests.
+- Lead technical design reviews and mentor mid-level engineers.
+- Define SLOs, drive incident response, and improve operational maturity.
+
+Required skills:
+- Strong distributed systems fundamentals (consistency, idempotency, concurrency).
+- Production experience with a major cloud, relational databases, and message queues.
+- Track record of operating services at scale (observability, on-call, runbooks).
+
+Preferred skills:
+- Payments or fintech domain experience.
+- Experience leading small teams and influencing architecture across teams.
+
+Leadership expectations:
+- Mentor engineers, lead design reviews, and communicate tradeoffs clearly.
+
+Communication expectations:
+- Explain complex technical decisions to both engineers and non-technical stakeholders.

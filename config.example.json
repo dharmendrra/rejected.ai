@@ -1,0 +1,18 @@
+{
+  "SERVER_ADDR": ":8080",
+
+  "MONGO_URI": "mongodb://localhost:27017",
+  "MONGO_DB": "rejected_ai",
+
+  "LLM_BACKEND": "ollama",
+
+  "OLLAMA_HOST": "http://localhost:11434",
+  "OLLAMA_MODEL": "gemma4:e4b",
+  "OLLAMA_EMBED_MODEL": "nomic-embed-text",
+
+  "ANTHROPIC_API_KEY": "",
+  "ANTHROPIC_MODEL": "claude-sonnet-4-6",
+
+  "MAX_TOKENS": 4096,
+  "TEMPERATURE": 0.4
+}
