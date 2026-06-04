@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>rejected.ai — Evidence-Driven Interview Intelligence in Go</title>
+<meta name="description" content="A local-first, AI-native interview intelligence platform in Go. It evaluates engineering candidates through conversation and accumulating evidence — every score traceable to specific answers, and retroactively re-scored as later answers reveal more. Built around an evidence ledger, confidence lenses, a multi-evaluator panel, and measurable-only audio/video signals." />
+
+<meta property="og:title" content="rejected.ai — Evidence-Driven Interview Intelligence in Go" />
+<meta property="og:description" content="Interview intelligence that scores on accumulating evidence, not keywords — with retroactive re-scoring, a multi-evaluator panel, and measurable-only signals. Local-first on Ollama, Anthropic-optional." />
+<meta property="og:type" content="website" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f6f8fb;
+    --bg-soft: #eef2f7;
+    --text: #0f172a;
+    --text-muted: #475569;
+    --text-faint: #64748b;
+    --border: #e2e8f0;
+    --accent: #2563eb;
+    --accent-dark: #1d4ed8;
+    --accent-soft: #dbeafe;
+    --green: #16a34a;
+    --green-soft: #dcfce7;
+    --amber: #ca8a04;
+    --amber-soft: #fef9c3;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06);
+    --maxw: 1080px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+  section { padding: 72px 0; }
+  .section-alt { background: var(--bg-alt); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+  h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 .4em; }
+  h2 { font-size: clamp(1.6rem, 3vw, 2.1rem); font-weight: 700; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; font-weight: 600; color: var(--accent); margin-bottom: 10px; }
+  .lead { font-size: 1.12rem; color: var(--text-muted); max-width: 740px; }
+
+  /* ---------- Nav ---------- */
+  header.nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255,255,255,.82);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 62px; }
+  .brand { font-weight: 800; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .brand span { color: var(--accent); }
+  .nav-links { display: flex; gap: 26px; align-items: center; }
+  .nav-links a { color: var(--text-muted); font-weight: 500; font-size: .94rem; }
+  .nav-links a:hover { color: var(--accent); text-decoration: none; }
+  .nav-cta { background: var(--accent); color: #fff !important; padding: 8px 16px; border-radius: 8px; font-weight: 600; }
+  .nav-cta:hover { background: var(--accent-dark); text-decoration: none; }
+  @media (max-width: 820px) { .nav-links a:not(.nav-cta) { display: none; } }
+
+  /* ---------- Hero ---------- */
+  .hero { padding: 84px 0 64px; background: linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 100%); }
+  .hero h1 { font-size: clamp(2.3rem, 6vw, 3.6rem); font-weight: 800; }
+  .hero h1 .accent { color: var(--accent); }
+  .hero .tagline { font-size: 1.2rem; color: var(--text-muted); max-width: 720px; margin-top: 8px; }
+  .hero-badges { display: flex; flex-wrap: wrap; gap: 10px; margin: 26px 0; }
+  .pill { background: #fff; border: 1px solid var(--border); padding: 6px 14px; border-radius: 999px; font-size: .85rem; font-weight: 500; color: var(--text-muted); box-shadow: var(--shadow); }
+  .pill strong { color: var(--text); }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 10px; font-weight: 600; font-size: .96rem; transition: .15s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-dark); text-decoration: none; }
+  .btn-ghost { background: #fff; color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+
+  /* ---------- Author strip ---------- */
+  .author { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 40px; padding-top: 28px; border-top: 1px solid var(--border); }
+  .author .who { font-weight: 700; }
+  .author .role { color: var(--text-faint); font-size: .92rem; }
+  .author-links { display: flex; gap: 18px; margin-left: auto; }
+  .author-links a { font-weight: 500; font-size: .92rem; }
+
+  /* ---------- Stats ---------- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  @media (max-width: 720px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat { text-align: center; }
+  .stat .num { font-size: 2.2rem; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; }
+  .stat .label { color: var(--text-faint); font-size: .9rem; margin-top: 2px; }
+
+  /* ---------- Cards grid ---------- */
+  .grid { display: grid; gap: 22px; margin-top: 38px; }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 860px) { .grid-3 { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .grid-2 { grid-template-columns: 1fr; } }
+  .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; box-shadow: var(--shadow); transition: .18s; }
+  .card:hover { transform: translateY(-3px); border-color: #cbd5e1; box-shadow: 0 10px 30px rgba(15,23,42,.10); }
+  .card h3 { font-size: 1.18rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .card .badge { font-size: .72rem; font-weight: 600; padding: 3px 9px; border-radius: 6px; background: var(--accent-soft); color: var(--accent-dark); letter-spacing: .02em; }
+  .card .badge.green { background: var(--green-soft); color: #15803d; }
+  .card p { color: var(--text-muted); font-size: .96rem; margin: 0 0 14px; }
+  .card p:last-child { margin-bottom: 0; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { font-size: .76rem; font-family: 'JetBrains Mono', monospace; background: var(--bg-soft); color: var(--text-faint); padding: 3px 9px; border-radius: 6px; }
+
+  /* ---------- Feature list ---------- */
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 38px; }
+  @media (max-width: 860px) { .features { grid-template-columns: 1fr; } }
+  .feature h3 { font-size: 1.08rem; }
+  .feature .ic { width: 42px; height: 42px; border-radius: 10px; background: var(--accent-soft); color: var(--accent-dark); display: grid; place-items: center; font-size: 1.3rem; margin-bottom: 14px; }
+  .feature p { color: var(--text-muted); font-size: .95rem; margin: 0; }
+
+  /* ---------- Code block ---------- */
+  pre { background: #0f172a; color: #e2e8f0; border-radius: var(--radius); padding: 22px 24px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: .85rem; line-height: 1.7; box-shadow: var(--shadow); }
+  pre .c { color: #64748b; }
+  pre .k { color: #7dd3fc; }
+  pre .s { color: #86efac; }
+  pre .y { color: #fcd34d; }
+
+  /* ---------- Loop diagram ---------- */
+  .loop { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; margin: 40px 0 8px; }
+  .loop .node { background: #fff; border: 1.5px solid var(--accent); color: var(--accent-dark); font-weight: 600; font-size: .92rem; padding: 12px 18px; border-radius: 10px; box-shadow: var(--shadow); }
+  .loop .node.alt { border-color: var(--green); color: #15803d; }
+  .loop .arrow { color: var(--text-faint); font-weight: 700; font-size: 1.2rem; }
+  .loop-note { text-align: center; color: var(--text-faint); font-size: .9rem; margin-top: 6px; }
+
+  /* ---------- Diagram figure ---------- */
+  figure.diagram { margin: 34px 0 0; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 22px; box-shadow: var(--shadow); overflow-x: auto; }
+  figure.diagram img { display: block; width: 100%; min-width: 640px; height: auto; }
+  figure.diagram figcaption { color: var(--text-faint); font-size: .86rem; text-align: center; margin-top: 14px; }
+
+  /* ---------- Table ---------- */
+  .tbl { width: 100%; border-collapse: collapse; margin-top: 38px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .tbl th, .tbl td { text-align: left; padding: 13px 18px; border-bottom: 1px solid var(--border); font-size: .94rem; vertical-align: top; }
+  .tbl th { background: var(--bg-soft); font-weight: 600; color: var(--text); font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl td code { font-size: .85rem; background: var(--bg-soft); padding: 2px 7px; border-radius: 5px; color: var(--accent-dark); }
+  .tbl td.muted { color: var(--text-faint); }
+
+  /* ---------- Stack ---------- */
+  .stack { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px; }
+  .chip { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 16px; font-weight: 500; font-size: .92rem; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow); }
+  .chip b { color: var(--accent); }
+
+  /* ---------- Skills ---------- */
+  .skill { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; box-shadow: var(--shadow); }
+  .skill .pillar { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin-bottom: 8px; }
+  .skill h3 { font-size: 1.12rem; }
+  .skill ul { margin: 12px 0 0; padding-left: 18px; color: var(--text-muted); font-size: .94rem; }
+  .skill li { margin-bottom: 6px; }
+
+  /* ---------- CTA band ---------- */
+  .band { background: var(--accent); color: #fff; border-radius: 18px; padding: 50px 40px; text-align: center; margin-top: 10px; }
+  .band h2 { color: #fff; }
+  .band p { color: #dbeafe; max-width: 600px; margin: 0 auto 24px; }
+  .band .btn-white { background: #fff; color: var(--accent); }
+  .band .btn-white:hover { background: #f1f5f9; text-decoration: none; }
+  .band .btn-outline { border: 1px solid rgba(255,255,255,.5); color: #fff; }
+  .band .btn-outline:hover { background: rgba(255,255,255,.12); text-decoration: none; }
+
+  /* ---------- Footer ---------- */
+  footer { padding: 40px 0; border-top: 1px solid var(--border); color: var(--text-faint); font-size: .9rem; }
+  .foot-inner { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; align-items: center; }
+  .foot-links { display: flex; gap: 20px; }
+</style>
+</head>
+<body>
+
+<!-- ===================== NAV ===================== -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <div class="brand">rejected<span>.ai</span></div>
+    <nav class="nav-links">
+      <a href="#overview">Overview</a>
+      <a href="#how">How it works</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#signals">Signals</a>
+      <a href="#skills">Skills</a>
+      <a class="nav-cta" href="https://github.com/dharmendrra/rejected.ai" target="_blank" rel="noopener">View on GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ===================== HERO ===================== -->
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow">AI-Native Interview Intelligence · Evidence-Driven · Built in Go</div>
+    <h1>Interview scoring that <span class="accent">rewrites the past</span> when it learns more.</h1>
+    <p class="tagline">A local-first interview intelligence platform that evaluates engineering candidates on <strong>accumulating evidence</strong>, not keywords. Every score traces to specific answers — and a later answer that reveals deeper understanding <em>retroactively</em> lifts the confidence of earlier, shorthand ones. Runs fully local on Ollama; switches to Anthropic Claude with a config flag.</p>
+
+    <div class="hero-badges">
+      <span class="pill">Evidence <strong>ledger</strong></span>
+      <span class="pill">Retroactive <strong>re-scoring</strong></span>
+      <span class="pill">Multi-evaluator <strong>panel</strong></span>
+      <span class="pill"><strong>Measurable-only</strong> signals</span>
+      <span class="pill">Dual backend · <strong>Ollama / Claude</strong></span>
+    </div>
+
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="https://github.com/dharmendrra/rejected.ai" target="_blank" rel="noopener">⭐ Explore the code</a>
+      <a class="btn btn-ghost" href="#how">See how it works →</a>
+    </div>
+
+    <div class="author">
+      <div>
+        <div class="who">Dharmendra Yadav</div>
+        <div class="role">Sr. Lead Engineer / Engineering Manager · Agentic AI Architect · Team Leadership &amp; Delivery · AI-Augmented Product Engineering</div>
+      </div>
+      <div class="author-links">
+        <a href="https://www.linkedin.com/in/dharmendra-yadav-20b9a017/" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="https://github.com/dharmendrra" target="_blank" rel="noopener">GitHub</a>
+        <a href="mailto:dharmendra.4real@gmail.com">Email</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== STATS ===================== -->
+<section class="section-alt" style="padding:48px 0;">
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat"><div class="num">Go</div><div class="label">stdlib-only backend, no framework</div></div>
+      <div class="stat"><div class="num">17</div><div class="label">cohesive engine packages</div></div>
+      <div class="stat"><div class="num">12</div><div class="label">phases, designed in sequence</div></div>
+      <div class="stat"><div class="num">Local-first</div><div class="label">Ollama default · Claude optional</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== OVERVIEW ===================== -->
+<section id="overview">
+  <div class="wrap">
+    <div class="eyebrow">What it is</div>
+    <h2>An interview engine that defends every number it produces</h2>
+    <p class="lead">Most automated screening collapses a candidate into keyword overlap. rejected.ai instead runs a conversation, extracts concept-linked <strong>evidence</strong> from each answer, and recomputes confidence over the <em>entire</em> ledger after every turn — so the assessment is explainable, self-correcting, and honest about what it can and cannot measure.</p>
+
+    <div class="features">
+      <div class="feature">
+        <div class="ic">🧾</div>
+        <h3>Evidence over keywords</h3>
+        <p>Each answer yields positive/negative evidence tied to specific competencies. The evidence ledger is the source of truth — every score cites the turns that justify it.</p>
+      </div>
+      <div class="feature">
+        <div class="ic">⏪</div>
+        <h3>Retroactive re-scoring</h3>
+        <p>Confidence is never frozen. When a later answer reinterprets an earlier shorthand one, the earlier evidence is revised — with the revision logged for replay.</p>
+      </div>
+      <div class="feature">
+        <div class="ic">🌡️</div>
+        <h3>Three confidence lenses</h3>
+        <p>Every competency is scored cool (skeptical), normal (balanced), and hot (generous), so a reader sees the range of defensible interpretations, not a single opaque verdict.</p>
+      </div>
+      <div class="feature">
+        <div class="ic">👥</div>
+        <h3>Multi-evaluator panel</h3>
+        <p>An Architect, EM, Staff+, Operator, ATS, Comms, and AI-Native persona each assess independently — surfacing where reasonable evaluators would disagree.</p>
+      </div>
+      <div class="feature">
+        <div class="ic">📏</div>
+        <h3>Measurable, never inferred</h3>
+        <p>Audio and video produce only counted signals — pace, fillers, engagement, attention. The system deliberately refuses to infer honesty, intelligence, or personality.</p>
+      </div>
+      <div class="feature">
+        <div class="ic">📈</div>
+        <h3>Cross-interview learning</h3>
+        <p>A candidate's competency trajectory across interviews is computed deterministically — pure arithmetic over stored scores, no LLM, fully explainable.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== HOW IT WORKS ===================== -->
+<section id="how" class="section-alt">
+  <div class="wrap">
+    <div class="eyebrow">The defining behavior</div>
+    <h2>The evidence loop</h2>
+    <p class="lead">Each turn feeds a recompute over the full ledger. Because the whole history is re-evaluated every time, re-scoring earlier answers in light of later ones is structural — not a bolt-on.</p>
+
+    <div class="loop">
+      <span class="node">Question</span>
+      <span class="arrow">→</span>
+      <span class="node">Evidence</span>
+      <span class="arrow">→</span>
+      <span class="node">Confidence update</span>
+      <span class="arrow">→</span>
+      <span class="node">New evidence</span>
+      <span class="arrow">→</span>
+      <span class="node alt">Retroactive re-scoring</span>
+    </div>
+    <p class="loop-note">…repeated per turn, with a confidence snapshot captured each time for replay.</p>
+
+    <figure class="diagram">
+      <img src="diagrams/architecture.svg" alt="rejected.ai data flow: JD and resume build capability graphs, which drive dynamic questions; each answer yields concept-linked evidence into the evidence ledger; confidence is recomputed over the entire ledger, retroactively re-scoring earlier evidence and emitting a per-turn snapshot; when evidence is insufficient a follow-up question is asked, otherwise a cited report is produced." />
+      <figcaption>End-to-end data flow — the confidence recompute reads the whole ledger and writes retroactive revisions back into it.</figcaption>
+    </figure>
+
+    <div class="grid grid-2" style="margin-top:28px;">
+      <div class="card">
+        <h3>Why it self-corrects</h3>
+        <p>Confidence isn't accumulated incrementally — it's recomputed from scratch over the full evidence ledger on every turn. That makes retroactive re-scoring a property of the design, so a terse early "duplicate handling" can be lifted once a later answer explains idempotency and exactly-once semantics.</p>
+      </div>
+      <div class="card">
+        <h3>Why it's explainable</h3>
+        <p>Every competency score, strongest signal, risk, and the final hiring recommendation carries citations to the exact turns behind it. The report includes score-evolution sparklines and a revision log — you can audit how a number moved and why.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ARCHITECTURE ===================== -->
+<section id="architecture">
+  <div class="wrap">
+    <div class="eyebrow">How it's built</div>
+    <h2>A layered Go engine, one concern per package</h2>
+    <p class="lead">Seventeen small, single-responsibility packages behind a stdlib <code>net/http</code> router. LLM generation, embeddings, and the database all sit behind interfaces, so backends swap by config rather than code change.</p>
+
+    <table class="tbl">
+      <thead><tr><th>Package</th><th>Responsibility</th></tr></thead>
+      <tbody>
+        <tr><td><code>documents</code></td><td>JD / resume ingestion — PDF/DOCX/TXT extraction + LLM structuring</td></tr>
+        <tr><td><code>capability</code></td><td>Candidate, target, and gap capability graphs</td></tr>
+        <tr><td><code>interview</code></td><td>Session orchestration, dynamic question generation, memory</td></tr>
+        <tr><td><code>evidence</code></td><td>Concept-linked evidence extraction into the ledger</td></tr>
+        <tr><td><code>confidence</code></td><td><strong>Core:</strong> recompute over the full ledger + retroactive re-scoring</td></tr>
+        <tr><td><code>assumptions</code></td><td>Per-answer assumptions + clarification-vs-deflection</td></tr>
+        <tr><td><code>evaluators</code></td><td>Persona panel — Architect / EM / Staff+ / Operator / ATS / Comms / AI-Native</td></tr>
+        <tr><td><code>risk</code> · <code>recommendation</code></td><td>Risk categorization + explainable, evidence-cited hire decision</td></tr>
+        <tr><td><code>report</code></td><td>Orchestrates scores + personas + signals + risk + recommendation</td></tr>
+        <tr><td><code>media</code></td><td>Measurable-only audio &amp; video signals (pluggable engines)</td></tr>
+        <tr><td><code>learning</code></td><td>Deterministic cross-interview competency trends</td></tr>
+        <tr><td class="muted"><code>llm · store · config · api</code></td><td class="muted">Backend interfaces, MongoDB, config, HTTP router</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:48px;">Design decisions worth noting</h3>
+    <div class="grid grid-3">
+      <div class="card">
+        <h3>Interface seams</h3>
+        <p>One <code>Caller</code> / <code>Streamer</code> / <code>Embedder</code> contract; Ollama and Anthropic are interchangeable implementations. The whole engine is testable without a live model.</p>
+      </div>
+      <div class="card">
+        <h3>Recompute, don't accumulate</h3>
+        <p>Confidence is derived from the entire ledger each turn. Choosing recomputation over incremental updates is what makes retroactive correction free and consistent.</p>
+      </div>
+      <div class="card">
+        <h3>Honest by construction</h3>
+        <p>Measurable signals are modelled as counts and percentages in the type system — there is no field in which an inferred trait could be stored.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:48px;">Stack</h3>
+    <div class="stack">
+      <span class="chip"><b>●</b> Go 1.26</span>
+      <span class="chip"><b>●</b> net/http ServeMux</span>
+      <span class="chip"><b>●</b> MongoDB</span>
+      <span class="chip"><b>●</b> Ollama (local LLM)</span>
+      <span class="chip"><b>●</b> Anthropic Claude</span>
+      <span class="chip"><b>●</b> nomic-embed-text</span>
+      <span class="chip"><b>●</b> Next.js (App Router)</span>
+      <span class="chip"><b>●</b> Pluggable whisper.cpp</span>
+      <span class="chip"><b>●</b> Pluggable video detector</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SIGNALS ===================== -->
+<section id="signals" class="section-alt">
+  <div class="wrap">
+    <div class="eyebrow">Multimodal, but disciplined</div>
+    <h2>Signals it measures — and the ones it refuses to</h2>
+    <p class="lead">Audio and video are first-class inputs, but the platform draws a hard ethical line: it reports only what can be counted, and never dresses up inference as measurement.</p>
+
+    <table class="tbl">
+      <thead><tr><th>Source</th><th>Measured (counted)</th><th>Never inferred</th></tr></thead>
+      <tbody>
+        <tr><td>Text / answers</td><td>Concept-linked evidence, compression ratio, clarification vs. deflection</td><td class="muted">—</td></tr>
+        <tr><td>Audio</td><td>Speaking pace (WPM), filler stats, word count, response latency</td><td class="muted">honesty · intelligence</td></tr>
+        <tr><td>Video</td><td>Engagement, attention, participation, timing — as frame percentages</td><td class="muted">personality · mood · traits</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:22px; color:var(--text-muted);">Both audio and video accept either pre-computed metrics (always available) or a raw upload processed by a pluggable engine — a clean two-path design that keeps the core dependency-light and the signals defensible.</p>
+  </div>
+</section>
+
+<!-- ===================== SKILLS ===================== -->
+<section id="skills">
+  <div class="wrap">
+    <div class="eyebrow">What this project demonstrates</div>
+    <h2>Skills on display</h2>
+    <p class="lead">rejected.ai was scoped, architected, and built end-to-end as a single coherent system. It maps directly to how I work as a leader and architect.</p>
+
+    <div class="grid grid-2">
+      <div class="skill">
+        <div class="pillar">Agentic AI Architect</div>
+        <h3>Reasoning systems that stay explainable</h3>
+        <ul>
+          <li>An evidence-ledger architecture where every LLM output is grounded and citable</li>
+          <li>Confidence recomputation enabling retroactive, consistent re-scoring</li>
+          <li>Backend-agnostic LLM/embedding interfaces — local Ollama or hosted Claude</li>
+          <li>Robust structured-output handling for smaller local models (JSON repair + retry)</li>
+        </ul>
+      </div>
+      <div class="skill">
+        <div class="pillar">System &amp; Software Design</div>
+        <h3>Architecture that ages well</h3>
+        <ul>
+          <li>17 single-responsibility packages, dependency-free domain core, no import cycles</li>
+          <li>stdlib-only HTTP layer — deliberate avoidance of unnecessary frameworks</li>
+          <li>Idempotent generation/persistence; one consistent "everything for one interview" access pattern</li>
+          <li>Pluggable engine seams (transcription, video detection) with graceful capability fallbacks</li>
+        </ul>
+      </div>
+      <div class="skill">
+        <div class="pillar">Sr. Lead Engineering / Delivery</div>
+        <h3>Shipping in disciplined increments</h3>
+        <ul>
+          <li>Delivered in 12 sequenced phases, each verified before the next began</li>
+          <li>Tested pure logic separately from I/O; build + vet + tests green at every step</li>
+          <li>Documentation as a deliverable — architecture, API, and format specs written down, not left in chat</li>
+        </ul>
+      </div>
+      <div class="skill">
+        <div class="pillar">AI-Augmented Product Engineering</div>
+        <h3>Judgement about what AI should and shouldn't do</h3>
+        <ul>
+          <li>A product stance encoded in code: measure what's countable, refuse to infer character</li>
+          <li>Multi-perspective evaluation that mirrors how real hiring panels actually disagree</li>
+          <li>Deterministic where determinism is honest (trends), generative where it adds value (evidence)</li>
+          <li>A full-stack delivery — Go engine, REST API, and a Next.js report/replay UI</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CTA BAND ===================== -->
+<section style="padding-bottom:80px;">
+  <div class="wrap">
+    <div class="band">
+      <h2>Dig into the engineering</h2>
+      <p>Full Go source, the evidence/confidence core, the measurable-signal design, per-phase docs, and a Next.js report UI all live in the repository.</p>
+      <div class="hero-cta" style="justify-content:center;">
+        <a class="btn btn-white" href="https://github.com/dharmendrra/rejected.ai" target="_blank" rel="noopener">View rejected.ai on GitHub</a>
+        <a class="btn btn-outline" href="mailto:dharmendra.4real@gmail.com">Get in touch</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer>
+  <div class="wrap foot-inner">
+    <div>© <span id="year"></span> Dharmendra Yadav · rejected.ai</div>
+    <div class="foot-links">
+      <a href="https://github.com/dharmendrra/rejected.ai" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.linkedin.com/in/dharmendra-yadav-20b9a017/" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="mailto:dharmendra.4real@gmail.com">Email</a>
+    </div>
+  </div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

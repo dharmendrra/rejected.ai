@@ -61,6 +61,7 @@ type interviewView struct {
 	Evidence    []domain.EvidenceItem       `json:"evidence"`
 	Confidence  []domain.ConfidenceSnapshot `json:"confidence"`
 	Transcripts []domain.Transcript         `json:"transcripts"`
+	Video       []domain.VideoMetadata      `json:"video"`
 }
 
 func (s *Server) handleGetInterview(w http.ResponseWriter, r *http.Request) {
@@ -88,6 +89,7 @@ func (s *Server) handleGetInterview(w http.ResponseWriter, r *http.Request) {
 	view.Evidence = findAll[domain.EvidenceItem](ctx, s, store.CollEvidenceLedger, id, "turn")
 	view.Confidence = findAll[domain.ConfidenceSnapshot](ctx, s, store.CollConfidenceScores, id, "turn")
 	view.Transcripts = findAll[domain.Transcript](ctx, s, store.CollTranscripts, id, "turn")
+	view.Video = findAll[domain.VideoMetadata](ctx, s, store.CollVideoMetadata, id, "turn")
 
 	writeJSON(w, http.StatusOK, view)
 }

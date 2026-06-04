@@ -322,3 +322,85 @@ type Recommendation struct {
 	Personas        []PersonaView `bson:"personas" json:"personas"`
 	CreatedAt       time.Time     `bson:"created_at" json:"created_at"`
 }
+
+// ─── Video (Phase 10) ────────────────────────────────────────────────────────
+//
+// Video yields MEASURABLE-ONLY signals about engagement, attention, participation,
+// and timing — derived from raw per-frame observations. It deliberately NEVER
+// infers honesty, intelligence, personality, mood, or any unmeasurable trait;
+// every stored field is a count, a percentage of counted frames, or a duration.
+
+// VideoMetadata sources.
+const (
+	VideoDetector = "detector" // frame metrics produced from an uploaded clip
+	VideoProvided = "provided" // frame metrics supplied directly by the caller
+)
+
+// FrameMetrics are the raw per-turn frame counts a detector (or the caller)
+// reports for one answer's video. These are the only inputs to video analysis:
+// nothing is inferred, everything is counted. A frame is "analyzed" if the
+// detector inspected it at all.
+type FrameMetrics struct {
+	FramesAnalyzed     int     `bson:"frames_analyzed" json:"frames_analyzed"`
+	FramesFacePresent  int     `bson:"frames_face_present" json:"frames_face_present"`
+	FramesGazeOnScreen int     `bson:"frames_gaze_on_screen" json:"frames_gaze_on_screen"`
+	FramesMultiFace    int     `bson:"frames_multi_face" json:"frames_multi_face"` // >1 face detected
+	OnCameraSec        float64 `bson:"on_camera_sec" json:"on_camera_sec"`         // seconds with the candidate on camera
+	DurationSec        float64 `bson:"duration_sec" json:"duration_sec"`           // total clip length
+}
+
+// VideoMetadata holds the measurable video signals for one answer turn. The Pct
+// fields are shares of FramesAnalyzed (0 when no frames were analyzed), so they
+// describe what was observed, never an inferred quality.
+type VideoMetadata struct {
+	ID              bson.ObjectID `bson:"_id,omitempty" json:"id"`
+	InterviewID     bson.ObjectID `bson:"interview_id" json:"interview_id"`
+	Turn            int           `bson:"turn" json:"turn"`
+	Source          string        `bson:"source" json:"source"`
+	FramesAnalyzed  int           `bson:"frames_analyzed" json:"frames_analyzed"`
+	FacePresentPct  float64       `bson:"face_present_pct" json:"face_present_pct"`     // engagement: frames with a face
+	GazeOnScreenPct float64       `bson:"gaze_on_screen_pct" json:"gaze_on_screen_pct"` // attention: frames looking at screen
+	OnCameraPct     float64       `bson:"on_camera_pct" json:"on_camera_pct"`           // participation: on-camera share of duration
+	MultiFacePct    float64       `bson:"multi_face_pct" json:"multi_face_pct"`         // frames with more than one face
+	DurationSec     float64       `bson:"duration_sec" json:"duration_sec"`             // timing
+	LatencyMs       int           `bson:"latency_ms" json:"latency_ms"`                 // response latency, if provided
+	CreatedAt       time.Time     `bson:"created_at" json:"created_at"`
+}
+
+// ─── Cross-interview learning (Phase 11) ─────────────────────────────────────
+//
+// Trends track how a candidate's measured competency scores move across their
+// own interviews over time. They are deterministic and explainable: every value
+// is derived from stored CompetencyScores, ordered by interview time. No trait
+// is inferred and no LLM is involved — this is arithmetic over prior results.
+
+// Trend directions.
+const (
+	TrendNew       = "new"       // only one interview so far — no trajectory yet
+	TrendImproving = "improving" // latest score is meaningfully above the first
+	TrendDeclining = "declining" // latest score is meaningfully below the first
+	TrendStable    = "stable"    // change within noise
+)
+
+// TrendPoint is one competency measurement at one interview, in time order.
+type TrendPoint struct {
+	InterviewID bson.ObjectID `bson:"interview_id" json:"interview_id"`
+	Normal      float64       `bson:"normal" json:"normal"`         // balanced-lens score (the headline metric)
+	Confidence  float64       `bson:"confidence" json:"confidence"` // evidence confidence behind the score
+	At          time.Time     `bson:"at" json:"at"`                 // interview time
+}
+
+// HistoricalTrend is one candidate's trajectory on one competency across all of
+// their interviews. There is one document per (candidate_id, competency).
+type HistoricalTrend struct {
+	ID          bson.ObjectID `bson:"_id,omitempty" json:"id"`
+	CandidateID bson.ObjectID `bson:"candidate_id" json:"candidate_id"`
+	Competency  string        `bson:"competency" json:"competency"`
+	Points      []TrendPoint  `bson:"points" json:"points"`         // oldest-first
+	Interviews  int           `bson:"interviews" json:"interviews"` // number of points
+	First       float64       `bson:"first" json:"first"`           // earliest Normal score
+	Latest      float64       `bson:"latest" json:"latest"`         // most recent Normal score
+	Delta       float64       `bson:"delta" json:"delta"`           // latest - first
+	Direction   string        `bson:"direction" json:"direction"`
+	CreatedAt   time.Time     `bson:"created_at" json:"created_at"`
+}

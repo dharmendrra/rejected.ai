@@ -17,5 +17,8 @@
   "TEMPERATURE": 0.4,
 
   "WHISPER_BIN": "",
-  "WHISPER_MODEL": ""
+  "WHISPER_MODEL": "",
+
+  "VIDEO_DETECTOR_BIN": "",
+  "VIDEO_DETECTOR_MODEL": ""
 }

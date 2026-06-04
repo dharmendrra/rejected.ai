@@ -1,0 +1,22 @@
+graph LR
+    classDef input fill:#f1f5f9,stroke:#64748b,stroke-width:1.5px,color:#0f172a;
+    classDef engine fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a;
+    classDef core fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a;
+    classDef store fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#0f172a;
+    classDef out fill:#ffffff,stroke:#94a3b8,stroke-width:1.5px,color:#0f172a;
+
+    JD["📄 JD + Resume"]:::input
+    G["🗺️ Capability Graphs<br/>candidate · target · gap"]:::engine
+    Q["💬 Question<br/>(dynamic)"]:::engine
+    EV["🧾 Evidence Extraction<br/>concept-linked"]:::engine
+    L[("📒 Evidence Ledger")]:::store
+    C["🌡️ Confidence Recompute<br/>over the ENTIRE ledger"]:::core
+    SNAP[("📸 Per-turn Snapshot")]:::store
+    R["📊 Report<br/>panel · signals · risk · recommendation"]:::out
+
+    JD --> G --> Q --> EV --> L
+    L --> C
+    C -- "retroactive re-scoring" --> L
+    C --> SNAP
+    C -- "sufficient? no" --> Q
+    C -- "sufficient? yes" --> R

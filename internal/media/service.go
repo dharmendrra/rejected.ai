@@ -12,15 +12,16 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-// Service computes and persists transcript signals for an interview.
+// Service computes and persists transcript + video signals for an interview.
 type Service struct {
 	Store       *store.Store
-	Transcriber Transcriber // may be nil if not configured
+	Transcriber Transcriber   // audio: may be nil if not configured
+	Detector    VideoDetector // video: may be nil if not configured
 }
 
-// NewService constructs a media Service. transcriber may be nil.
-func NewService(st *store.Store, t Transcriber) *Service {
-	return &Service{Store: st, Transcriber: t}
+// NewService constructs a media Service. transcriber and detector may be nil.
+func NewService(st *store.Store, t Transcriber, d VideoDetector) *Service {
+	return &Service{Store: st, Transcriber: t, Detector: d}
 }
 
 // IngestTranscript computes measurable signals from a supplied transcript and
@@ -89,5 +90,69 @@ func SaveTempAudio(filename string, data []byte) (string, func(), error) {
 		os.Remove(path)
 		os.Remove(path[:len(path)-len(ext)] + ".txt")
 	}
+	return path, cleanup, nil
+}
+
+// IngestVideoMetadata computes measurable video signals from supplied frame
+// metrics and persists them. This path always works (no detector required).
+func (s *Service) IngestVideoMetadata(ctx context.Context, interviewID bson.ObjectID, turn int, m domain.FrameMetrics, latencyMs int, source string) (*domain.VideoMetadata, error) {
+	facePct, gazePct, onCamPct, multiPct := AnalyzeVideo(m)
+
+	vm := domain.VideoMetadata{
+		InterviewID:     interviewID,
+		Turn:            turn,
+		Source:          source,
+		FramesAnalyzed:  m.FramesAnalyzed,
+		FacePresentPct:  facePct,
+		GazeOnScreenPct: gazePct,
+		OnCameraPct:     onCamPct,
+		MultiFacePct:    multiPct,
+		DurationSec:     m.DurationSec,
+		LatencyMs:       latencyMs,
+		CreatedAt:       time.Now().UTC(),
+	}
+
+	// One video-metadata doc per (interview, turn): replace any prior.
+	filter := bson.D{{Key: "interview_id", Value: interviewID}, {Key: "turn", Value: turn}}
+	_, _ = s.Store.Coll(store.CollVideoMetadata).DeleteMany(ctx, filter)
+	res, err := s.Store.Coll(store.CollVideoMetadata).InsertOne(ctx, vm)
+	if err != nil {
+		return nil, fmt.Errorf("persist video metadata: %w", err)
+	}
+	vm.ID = res.InsertedID.(bson.ObjectID)
+	return &vm, nil
+}
+
+// IngestVideo runs the configured detector over a video file to produce frame
+// metrics, then computes + persists signals. latencyMs is taken from the caller.
+func (s *Service) IngestVideo(ctx context.Context, interviewID bson.ObjectID, turn int, videoPath string, latencyMs int) (*domain.VideoMetadata, error) {
+	if s.Detector == nil {
+		return nil, fmt.Errorf("video detection not configured (set VIDEO_DETECTOR_BIN); supply frame metrics via the video-metadata endpoint instead")
+	}
+	m, err := s.Detector.Detect(ctx, videoPath)
+	if err != nil {
+		return nil, err
+	}
+	return s.IngestVideoMetadata(ctx, interviewID, turn, m, latencyMs, domain.VideoDetector)
+}
+
+// SaveTempVideo writes uploaded video bytes to a temp file and returns the path
+// and a cleanup func.
+func SaveTempVideo(filename string, data []byte) (string, func(), error) {
+	ext := filepath.Ext(filename)
+	if ext == "" {
+		ext = ".mp4"
+	}
+	f, err := os.CreateTemp("", "rejected_ai_video_*"+ext)
+	if err != nil {
+		return "", func() {}, err
+	}
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return "", func() {}, err
+	}
+	f.Close()
+	path := f.Name()
+	cleanup := func() { os.Remove(path) }
 	return path, cleanup, nil
 }

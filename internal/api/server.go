@@ -14,6 +14,7 @@ import (
 	"github.com/dharmendra/rejected.ai/internal/evaluators"
 	"github.com/dharmendra/rejected.ai/internal/evidence"
 	"github.com/dharmendra/rejected.ai/internal/interview"
+	"github.com/dharmendra/rejected.ai/internal/learning"
 	"github.com/dharmendra/rejected.ai/internal/llm"
 	"github.com/dharmendra/rejected.ai/internal/media"
 	"github.com/dharmendra/rejected.ai/internal/recommendation"
@@ -33,6 +34,7 @@ type Server struct {
 	Interview *interview.Service
 	Report    *report.Service
 	Media     *media.Service
+	Learning  *learning.Service
 }
 
 // NewServer constructs a Server and the engine services it exposes.
@@ -47,11 +49,15 @@ func NewServer(cfg *config.Config, st *store.Store, provider *llm.Provider) *Ser
 	rk := risk.NewService(provider)
 	rec := recommendation.NewService(provider)
 
-	// Keep the interface nil (not a typed-nil) when whisper isn't configured,
-	// so media.Service can detect the absence correctly.
+	// Keep the interfaces nil (not a typed-nil) when the engines aren't
+	// configured, so media.Service can detect the absence correctly.
 	var transcriber media.Transcriber
 	if w := media.NewWhisperCpp(cfg.WhisperBin, cfg.WhisperModel); w != nil {
 		transcriber = w
+	}
+	var detector media.VideoDetector
+	if d := media.NewExternalDetector(cfg.VideoDetectorBin, cfg.VideoDetectorModel); d != nil {
+		detector = d
 	}
 
 	return &Server{
@@ -61,7 +67,8 @@ func NewServer(cfg *config.Config, st *store.Store, provider *llm.Provider) *Ser
 		Documents: documents.NewService(provider, st),
 		Interview: interview.NewService(provider, st, cap, ev, conf, asm),
 		Report:    report.NewService(st, ev, conf, eval, sig, rk, rec),
-		Media:     media.NewService(st, transcriber),
+		Media:     media.NewService(st, transcriber, detector),
+		Learning:  learning.NewService(st),
 	}
 }
 
@@ -86,6 +93,14 @@ func (s *Server) Routes() http.Handler {
 	// Phase 9 — audio: supply a transcript, or upload audio (if whisper configured).
 	mux.HandleFunc("POST /api/interviews/{id}/transcript", s.handleIngestTranscript)
 	mux.HandleFunc("POST /api/interviews/{id}/audio", s.handleIngestAudio)
+
+	// Phase 10 — video: supply frame metrics, or upload video (if a detector is configured).
+	mux.HandleFunc("POST /api/interviews/{id}/video-metadata", s.handleIngestVideoMetadata)
+	mux.HandleFunc("POST /api/interviews/{id}/video", s.handleIngestVideo)
+
+	// Phase 11 — cross-interview learning: compute / fetch a candidate's trends.
+	mux.HandleFunc("POST /api/candidates/{id}/trends", s.handleComputeTrends)
+	mux.HandleFunc("GET /api/candidates/{id}/trends", s.handleGetTrends)
 
 	return withLogging(withCORS(mux))
 }

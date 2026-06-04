@@ -34,6 +34,12 @@ type Config struct {
 	// whisper.cpp CLI; otherwise callers supply transcripts directly.
 	WhisperBin   string `json:"WHISPER_BIN"`
 	WhisperModel string `json:"WHISPER_MODEL"`
+
+	// Video (Phase 10). When set, video uploads are inspected by an external
+	// detector CLI that emits FrameMetrics JSON; otherwise callers supply frame
+	// metrics directly. The model path is optional and detector-specific.
+	VideoDetectorBin   string `json:"VIDEO_DETECTOR_BIN"`
+	VideoDetectorModel string `json:"VIDEO_DETECTOR_MODEL"`
 }
 
 // Load reads and parses the config file at path, then applies defaults and validation.

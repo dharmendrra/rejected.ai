@@ -213,6 +213,87 @@ Transcribes via whisper.cpp when `WHISPER_BIN` + `WHISPER_MODEL` are set; otherw
 
 Transcripts appear in `GET /api/interviews/{id}` under `transcripts`.
 
+## Video (Phase 10)
+
+Only **measurable** signals are computed — engagement, attention, participation, and timing,
+all derived from raw per-frame counts. **Never** inferred: honesty, intelligence, personality,
+mood, or any other trait. Every output is a count, a percentage of analyzed frames, or a
+duration. See [VIDEO_METADATA_FORMAT.md](VIDEO_METADATA_FORMAT.md) for the full contract.
+
+### `POST /api/interviews/{id}/video-metadata`
+Supply per-frame metrics; always available (no detection engine needed). Requires either
+`metrics.frames_analyzed` or `metrics.duration_sec` to be > 0.
+```json
+{
+  "turn": 1,
+  "metrics": {
+    "frames_analyzed": 1800, "frames_face_present": 1710,
+    "frames_gaze_on_screen": 1520, "frames_multi_face": 0,
+    "on_camera_sec": 60.0, "duration_sec": 62.0
+  },
+  "latency_ms": 1200
+}
+```
+Response `201`:
+```json
+{
+  "turn": 1, "source": "provided", "frames_analyzed": 1800,
+  "face_present_pct": 95, "gaze_on_screen_pct": 84.44,
+  "on_camera_pct": 96.77, "multi_face_pct": 0,
+  "duration_sec": 62, "latency_ms": 1200
+}
+```
+Percentages clamp to `[0,100]`; a percentage is `0` when its denominator
+(`frames_analyzed`, or `duration_sec` for `on_camera_pct`) is 0.
+
+### `POST /api/interviews/{id}/video` (multipart)
+Field `file` = video; optional form fields `turn`, `latency_ms`.
+Runs the external detector when `VIDEO_DETECTOR_BIN` is set (the CLI prints `FrameMetrics`
+JSON for the clip); otherwise returns `501` directing you to the video-metadata endpoint.
+
+Video metadata appears in `GET /api/interviews/{id}` under `video`.
+
+## Cross-interview learning (Phase 11)
+
+Tracks how a candidate's measured competency scores move across **their own**
+interviews over time. Fully **deterministic and explainable** — arithmetic over
+stored `competency_scores`, ordered by interview time. No LLM, no inferred traits.
+The headline metric is the balanced (`normal`) lens. See
+[TRENDS_FORMAT.md](TRENDS_FORMAT.md) for the full contract.
+
+A competency's `direction` is `improving` / `declining` when the latest score
+differs from the first by more than ±0.05, `stable` within that band, and `new`
+when only one interview exists. One trend document is kept per
+`(candidate_id, competency)`.
+
+### `POST /api/candidates/{id}/trends`
+(Re)computes and persists the candidate's trends. `{id}` is a candidate profile id.
+Returns `200` with the trends and a pattern summary:
+```json
+{
+  "candidate_id": "...",
+  "trends": [
+    {
+      "candidate_id": "...", "competency": "architecture",
+      "interviews": 3, "first": 0.5, "latest": 0.9, "delta": 0.4,
+      "direction": "improving",
+      "points": [
+        { "interview_id": "...", "normal": 0.5, "confidence": 0.6, "at": "2026-01-01T00:00:00Z" },
+        { "interview_id": "...", "normal": 0.7, "confidence": 0.7, "at": "2026-02-01T00:00:00Z" },
+        { "interview_id": "...", "normal": 0.9, "confidence": 0.8, "at": "2026-03-01T00:00:00Z" }
+      ]
+    }
+  ],
+  "improving": ["architecture"], "declining": ["delivery"], "stable": ["comms"]
+}
+```
+Interviews without a generated report (no finalized competency scores)
+contribute nothing.
+
+### `GET /api/candidates/{id}/trends`
+Returns previously computed trends in the same shape. `404` if none have been
+computed yet (POST to compute).
+
 ## Error envelope
 
 All errors: `{ "error": "<message>" }` with the appropriate 4xx/5xx status.

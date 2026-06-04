@@ -15,6 +15,10 @@ import (
 // calls. Generous because gemma on Ollama can take many seconds per call.
 const llmTimeout = 10 * time.Minute
 
+// dbTimeout bounds a request that only touches MongoDB (no LLM), such as
+// computing cross-interview trends.
+const dbTimeout = 30 * time.Second
+
 // maxUpload caps uploaded document size.
 const maxUpload = 25 << 20 // 25 MiB
 
