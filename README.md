@@ -4,13 +4,24 @@ Local-first, AI-native **interview intelligence** platform. It evaluates enginee
 candidates through conversation and **accumulating evidence** rather than keyword
 matching. The defining behavior is the evidence loop:
 
-```
-Question → Evidence → Confidence Update → New Evidence → Confidence Update → Retroactive Re-scoring
+```mermaid
+flowchart LR
+    Q([Question]) --> E[Evidence]
+    E --> C[Confidence recompute]
+    C -->|next turn| Q
+    C -. retroactive re-scoring .-> E
+    C -->|sufficient| R[["Cited report"]]
+    classDef core fill:#dcfce7,stroke:#16a34a,color:#0f172a;
+    class C core;
 ```
 
 Scores are never frozen — a later answer that reveals deeper understanding lifts the
 confidence attributed to earlier shorthand answers, and every score is explainable via
 the evidence ledger.
+
+<p align="center">
+  <img src="docs/diagrams/architecture.png" alt="rejected.ai data flow — a setup pipeline (JD + résumé → capability graphs → first question) feeding an interview evidence loop that recomputes confidence over the entire ledger and emits a cited hiring report" width="860">
+</p>
 
 ## Quick Start
 
