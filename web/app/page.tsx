@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 
@@ -28,9 +28,26 @@ export default function Home() {
   const [type, setType] = useState("Mixed");
   const [duration, setDuration] = useState(20);
   const [rigorPercent, setRigorPercent] = useState(50);
+  const [source, setSource] = useState<"ai" | "pond">("ai");
+  const [pondCount, setPondCount] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    api.countQuestionsPond({ role: level, type }).then(
+      (res) => {
+        if (active) setPondCount(res.count);
+      },
+      () => {
+        if (active) setPondCount(null);
+      }
+    );
+    return () => {
+      active = false;
+    };
+  }, [level, type]);
 
   async function start() {
     setError("");
@@ -48,6 +65,7 @@ export default function Home() {
         type,
         duration_min: duration,
         rigor_percent: rigorPercent,
+        source,
       });
       router.push(`/interview/${created.interview.id}`);
     } catch (e) {
@@ -166,6 +184,27 @@ export default function Home() {
             <label>Duration (min)</label>
             <input type="number" value={duration} min={5} max={90} onChange={(e) => setDuration(Number(e.target.value))} />
           </div>
+        </div>
+
+        <div className="row" style={{ marginTop: 12 }}>
+          <div>
+            <label>Questions source</label>
+            <select value={source} onChange={(e) => setSource(e.target.value as "ai" | "pond")}>
+              <option value="ai">🤖 Generate with AI (default)</option>
+              <option value="pond">🗂️ Use the Question Pond</option>
+            </select>
+          </div>
+          {source === "pond" && (
+            <div style={{ display: "flex", alignItems: "flex-end" }}>
+              <span className="muted small" style={{ marginBottom: 10, fontWeight: 500 }}>
+                {pondCount !== null
+                  ? pondCount > 0
+                    ? `✅ ${pondCount} pond question${pondCount === 1 ? "" : "s"} available`
+                    : "⚠️ Pond is empty for this role/type — will fall back to AI generation"
+                  : "Checking pond availability..."}
+              </span>
+            </div>
+          )}
         </div>
 
         <div style={{ marginTop: 16 }}>

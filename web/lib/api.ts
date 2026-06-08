@@ -39,6 +39,7 @@ export interface Interview {
   duration_min: number;
   rigor_percent: number;
   status: string;
+  graph_status?: string;
   competencies: string[];
   created_at: string;
   updated_at: string;
@@ -91,8 +92,9 @@ export interface ConfidenceSnapshot {
 
 export interface CreateResult {
   interview: Interview;
-  graphs: CapabilityGraphSet;
+  graphs: CapabilityGraphSet | null;
   question: Turn;
+  question_source?: string;
 }
 
 export interface AnswerResult {
@@ -341,6 +343,26 @@ export interface Dashboard {
   score_evolution: ScoreEvolution[];
 }
 
+export interface PondQuestion {
+  id: string;
+  question: string;
+  target_competencies: string[];
+  role: string;
+  type: string;
+  rigor_percent: number;
+  model: string;
+  source_interview_id: string;
+  job_title?: string;
+  used_count: number;
+  created_at: string;
+}
+
+export interface QuestionsPondResponse {
+  questions: PondQuestion[];
+  roles: string[];
+  types: string[];
+}
+
 // ─── Calls ───────────────────────────────────────────────────────────────────
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
@@ -384,6 +406,7 @@ export const api = {
     type: string;
     duration_min: number;
     rigor_percent: number;
+    source?: string;
   }) => req<CreateResult>("/api/interviews", { method: "POST", body: JSON.stringify(body) }),
   submitAnswer: (id: string, answer: string) =>
     req<AnswerResult>(`/api/interviews/${id}/answer`, { method: "POST", body: JSON.stringify({ answer }) }),
@@ -414,5 +437,19 @@ export const api = {
     if (opts?.to) params.set("to", opts.to);
     const qs = params.toString();
     return req<Dashboard>(`/api/dashboard${qs ? `?${qs}` : ""}`);
+  },
+  listQuestionsPond: (opts?: { role?: string; type?: string }) => {
+    const params = new URLSearchParams();
+    if (opts?.role && opts.role !== "all") params.set("role", opts.role);
+    if (opts?.type && opts.type !== "all") params.set("type", opts.type);
+    const qs = params.toString();
+    return req<QuestionsPondResponse>(`/api/questions-pond${qs ? `?${qs}` : ""}`);
+  },
+  countQuestionsPond: (opts?: { role?: string; type?: string }) => {
+    const params = new URLSearchParams();
+    if (opts?.role && opts.role !== "all") params.set("role", opts.role);
+    if (opts?.type && opts.type !== "all") params.set("type", opts.type);
+    const qs = params.toString();
+    return req<{ count: number }>(`/api/questions-pond/count${qs ? `?${qs}` : ""}`);
   },
 };

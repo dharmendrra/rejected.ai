@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dharmendra/rejected.ai/internal/capability"
 	"github.com/dharmendra/rejected.ai/internal/confidence"
 	"github.com/dharmendra/rejected.ai/internal/domain"
 	"github.com/dharmendra/rejected.ai/internal/evaluators"
@@ -91,7 +92,7 @@ func TestReportPipeline(t *testing.T) {
 	conf := confidence.NewService(provider, st, ev)
 	svc := NewService(st, ev, conf,
 		evaluators.NewService(provider), signals.NewService(provider),
-		risk.NewService(provider), recommendation.NewService(provider), provider)
+		risk.NewService(provider), recommendation.NewService(provider), provider, capability.NewService(provider))
 
 	rep, err := svc.Generate(ctx, ivID)
 	if err != nil {
