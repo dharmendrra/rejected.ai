@@ -5,6 +5,7 @@
   "MONGO_DB": "rejected_ai",
 
   "LLM_BACKEND": "ollama",
+  "LLM_LOG_LEVEL": "off",
 
   "OLLAMA_HOST": "http://localhost:11434",
   "OLLAMA_MODEL": "gemma4:e4b",

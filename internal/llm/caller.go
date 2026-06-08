@@ -7,6 +7,7 @@ package llm
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -25,13 +26,15 @@ type Provider struct {
 }
 
 // New builds a Provider from config. Generation uses the configured backend
-// ("ollama" or "anthropic").
+// ("ollama" or "anthropic"). When LLM_LOG_LEVEL is "info" or "debug", every
+// call is wrapped with audit logging to logs/llm_calls.log.
 func New(cfg *config.Config) (*Provider, error) {
 	httpClient := &http.Client{Timeout: 15 * time.Minute}
 
+	var caller Caller
 	switch cfg.LLMBackend {
 	case "ollama":
-		o := &OllamaCaller{
+		caller = &OllamaCaller{
 			BaseURL:     cfg.OllamaHost,
 			Model:       cfg.OllamaModel,
 			MaxTokens:   cfg.MaxTokens,
@@ -39,19 +42,26 @@ func New(cfg *config.Config) (*Provider, error) {
 			NumCtx:      cfg.OllamaNumCtx,
 			Client:      httpClient,
 		}
-		return &Provider{Caller: o}, nil
-
 	case "anthropic":
-		a := &AnthropicCaller{
+		caller = &AnthropicCaller{
 			APIKey:      cfg.AnthropicAPIKey,
 			Model:       cfg.AnthropicModel,
 			MaxTokens:   cfg.MaxTokens,
 			Temperature: *cfg.Temperature,
 			Client:      httpClient,
 		}
-		return &Provider{Caller: a}, nil
-
 	default:
 		return nil, fmt.Errorf("unknown LLM backend %q", cfg.LLMBackend)
 	}
+
+	if lvl := cfg.LLMLogLevel; lvl != "" && lvl != "off" {
+		logger, err := newAuditLogger(lvl)
+		if err != nil {
+			return nil, err
+		}
+		log.Printf("[LLM] audit logging enabled (level=%s) -> %s", lvl, auditLogPath)
+		caller = &loggingCaller{inner: caller, logger: logger}
+	}
+
+	return &Provider{Caller: caller}, nil
 }
