@@ -20,6 +20,11 @@ type Config struct {
 	// LLMBackend selects the default generation/evaluation backend: "ollama" or "anthropic".
 	LLMBackend string `json:"LLM_BACKEND"`
 
+	// LLMLogLevel controls audit logging of LLM calls to logs/llm_calls.log:
+	// "off" (default), "info" (metadata only — PII-safe), or "debug" (also logs
+	// the full prompts and raw responses).
+	LLMLogLevel string `json:"LLM_LOG_LEVEL"`
+
 	OllamaHost  string `json:"OLLAMA_HOST"`
 	OllamaModel string `json:"OLLAMA_MODEL"`
 
@@ -76,6 +81,9 @@ func (c *Config) applyDefaults() {
 	if c.LLMBackend == "" {
 		c.LLMBackend = "ollama"
 	}
+	if c.LLMLogLevel == "" {
+		c.LLMLogLevel = "off"
+	}
 	if c.OllamaHost == "" {
 		c.OllamaHost = "http://localhost:11434"
 	}
@@ -107,6 +115,12 @@ func (c *Config) validate() error {
 		}
 	default:
 		return fmt.Errorf("unknown LLM_BACKEND %q (want \"ollama\" or \"anthropic\")", c.LLMBackend)
+	}
+
+	switch c.LLMLogLevel {
+	case "off", "info", "debug":
+	default:
+		return fmt.Errorf("unknown LLM_LOG_LEVEL %q (want \"off\", \"info\", or \"debug\")", c.LLMLogLevel)
 	}
 	return nil
 }

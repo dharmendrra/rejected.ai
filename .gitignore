@@ -17,3 +17,6 @@ web/out/
 # Uploaded artifacts / media
 /data/uploads/
 /data/media/
+
+# LLM audit logs (enable via LLM_LOG_LEVEL)
+/logs/

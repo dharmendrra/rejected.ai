@@ -100,11 +100,15 @@ Rules:
 - Never ask generic textbook questions. Probe for validation of the specific gaps and unknowns identified for THIS candidate and role.
 - Prioritize competencies with low confidence and high validation priority.
 - Generate exactly %d sequential, distinct questions. They should cover different target competencies without overlap, forming a structured, comprehensive interview guide.
+- Strictly calibrate the depth, hardness, and complexity of EVERY question to the target rigor/difficulty percentage. The percentage is a continuous scale; interpolate between the anchors below, don't just snap to them:
+  * Low Rigor (0-20%%): Basic conceptual checks, syntax, simple behavioral recall.
+  * Medium Rigor (40-60%%): Standard technical screenings, standard optimizations, structured behavioral analysis.
+  * High Rigor (80-100%%): Bare-metal system design, low-level compilers/runtimes from scratch, deep socio-technical org restructuring scenarios (EM).
 - Ask single, focused questions.
 Respond with a single JSON object containing an array of questions, and no prose.`, n)
 
-	userPrompt := fmt.Sprintf(`Interview level: %s | type: %s
-Generate exactly %d questions.
+	userPrompt := fmt.Sprintf(`Interview level: %s | type: %s | rigor/difficulty: %d%%
+Generate exactly %d questions, every one calibrated to the %d%% rigor/difficulty above.
 
 Validation targets (highest priority first):
 %s
@@ -117,7 +121,7 @@ Generate the list of questions as JSON:
       "target_competencies": string[]
     }
   ]
-}`, iv.Level, iv.Type, n, llm.MarshalCompact(graphs.ValidationTargets))
+}`, iv.Level, iv.Type, iv.RigorPercent, n, iv.RigorPercent, llm.MarshalCompact(graphs.ValidationTargets))
 
 	var res struct {
 		Questions []struct {
