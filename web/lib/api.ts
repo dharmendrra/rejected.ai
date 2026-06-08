@@ -202,6 +202,145 @@ export interface Report {
   progress?: ReportProgress;
 }
 
+// ─── Progress Dashboard types (mirror GET /api/dashboard) ─────────────────────
+
+export type DecisionValue =
+  | "strong_hire"
+  | "hire"
+  | "hire_with_risks"
+  | "borderline"
+  | "no_hire";
+
+export type RiskCategory = "missing" | "weak" | "jd_risk";
+export type RiskSeverity = "low" | "medium" | "high";
+export type TrendDirection = "improving" | "declining" | "stable" | "new";
+
+export interface DashboardScope {
+  candidate: string;
+  from: string | null;
+  to: string | null;
+}
+
+export interface DashboardKpis {
+  total_interviews: number;
+  completed_reports: number;
+  pending_reports: number;
+  questions_asked: number;
+  questions_answered: number;
+  avg_confidence: number;
+  most_improved_competency: string;
+  candidates: number;
+}
+
+export interface VerdictMixItem {
+  decision: DecisionValue;
+  count: number;
+}
+
+export interface ConfidencePoint {
+  interview_id: string;
+  at: string;
+  confidence: number;
+  decision: string;
+  level: string;
+  type: string;
+  rigor_percent: number;
+  candidate_name: string;
+  job_title: string;
+}
+
+export interface CompetencyTrendPoint {
+  interview_id: string;
+  at: string;
+  normal: number;
+  confidence: number;
+}
+
+export interface CompetencyTrend {
+  competency: string;
+  direction: TrendDirection;
+  first: number;
+  latest: number;
+  delta: number;
+  points: CompetencyTrendPoint[];
+}
+
+export interface CompetencyProfileItem {
+  competency: string;
+  cool: number;
+  normal: number;
+  hot: number;
+  confidence: number;
+  first_normal: number;
+}
+
+export interface RigorVsConfidenceItem {
+  interview_id: string;
+  rigor_percent: number;
+  confidence: number;
+  decision: string;
+  type: string;
+}
+
+export interface CoverageItem {
+  key: string;
+  count: number;
+}
+
+export interface DashboardCoverage {
+  by_type: CoverageItem[];
+  by_level: CoverageItem[];
+}
+
+export interface RiskBucket {
+  category: RiskCategory;
+  severity: RiskSeverity;
+  count: number;
+}
+
+export interface TopSignal {
+  name: string;
+  count: number;
+}
+
+export interface PersonaCompetencyScore {
+  competency: string;
+  avg_score: number;
+}
+
+export interface PersonaCompetency {
+  persona: string;
+  competencies: PersonaCompetencyScore[];
+}
+
+export interface ScoreEvolutionTurn {
+  turn: number;
+  avg_normal: number;
+}
+
+export interface ScoreEvolution {
+  interview_id: string;
+  candidate_name: string;
+  type: string;
+  series: ScoreEvolutionTurn[];
+}
+
+export interface Dashboard {
+  generated_at: string;
+  scope: DashboardScope;
+  kpis: DashboardKpis;
+  verdict_mix: VerdictMixItem[];
+  confidence_over_time: ConfidencePoint[];
+  competency_trends: CompetencyTrend[];
+  competency_profile: CompetencyProfileItem[];
+  rigor_vs_confidence: RigorVsConfidenceItem[];
+  coverage: DashboardCoverage;
+  risks: RiskBucket[];
+  top_signals: TopSignal[];
+  persona_competency: PersonaCompetency[];
+  score_evolution: ScoreEvolution[];
+}
+
 // ─── Calls ───────────────────────────────────────────────────────────────────
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
@@ -268,4 +407,12 @@ export const api = {
   getReport: (id: string) => req<Report>(`/api/interviews/${id}/report`),
   listInterviews: () => req<any[]>("/api/interviews"),
   deleteInterview: (id: string) => req<{ status: string }>(`/api/interviews/${id}`, { method: "DELETE" }),
+  getDashboard: (opts?: { candidate?: string; from?: string; to?: string }) => {
+    const params = new URLSearchParams();
+    if (opts?.candidate && opts.candidate !== "all") params.set("candidate", opts.candidate);
+    if (opts?.from) params.set("from", opts.from);
+    if (opts?.to) params.set("to", opts.to);
+    const qs = params.toString();
+    return req<Dashboard>(`/api/dashboard${qs ? `?${qs}` : ""}`);
+  },
 };

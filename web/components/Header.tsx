@@ -22,6 +22,11 @@ export default function Header() {
             📁 Past interviews
           </button>
         </Link>
+        <Link href="/dashboard" style={{ textDecoration: "none" }}>
+          <button className="ghost" style={{ fontSize: "13px", padding: "6px 12px", border: "1px solid var(--border)", background: "transparent", cursor: "pointer", borderRadius: "8px" }}>
+            📈 Progress Dashboard
+          </button>
+        </Link>
       </div>
     </div>
   );
