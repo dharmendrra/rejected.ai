@@ -27,6 +27,11 @@ export default function Header() {
             📈 Progress Dashboard
           </button>
         </Link>
+        <Link href="/pond" style={{ textDecoration: "none" }}>
+          <button className="ghost" style={{ fontSize: "13px", padding: "6px 12px", border: "1px solid var(--border)", background: "transparent", cursor: "pointer", borderRadius: "8px" }}>
+            🗂️ Question Pond
+          </button>
+        </Link>
       </div>
     </div>
   );

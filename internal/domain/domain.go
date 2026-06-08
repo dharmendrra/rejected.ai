@@ -89,6 +89,13 @@ const (
 	StatusCompleted = "completed"
 )
 
+// GraphStatus values for background capability graph build.
+const (
+	GraphStatusBuilding = "building"
+	GraphStatusReady    = "ready"
+	GraphStatusFailed   = "failed"
+)
+
 // Interview is the central session aggregate.
 type Interview struct {
 	ID                 bson.ObjectID `bson:"_id,omitempty" json:"id"`
@@ -99,7 +106,8 @@ type Interview struct {
 	DurationMin        int           `bson:"duration_min" json:"duration_min"`
 	RigorPercent       int           `bson:"rigor_percent" json:"rigor_percent"`
 	Status             string        `bson:"status" json:"status"`
-	Competencies       []string      `bson:"competencies" json:"competencies"` // inferred dynamically
+	GraphStatus        string        `bson:"graph_status,omitempty" json:"graph_status,omitempty"` // building | ready | failed
+	Competencies       []string      `bson:"competencies" json:"competencies"`                     // inferred dynamically
 	CreatedAt          time.Time     `bson:"created_at" json:"created_at"`
 	UpdatedAt          time.Time     `bson:"updated_at" json:"updated_at"`
 }
@@ -459,4 +467,24 @@ type CandidateCoaching struct {
 	InterviewID bson.ObjectID  `bson:"interview_id" json:"interview_id"`
 	Items       []CoachingItem `bson:"items" json:"items"`
 	CreatedAt   time.Time      `bson:"created_at" json:"created_at"`
+}
+
+// PondQuestion is a reusable LLM-generated question stored in the question pond.
+type PondQuestion struct {
+	ID                 bson.ObjectID `bson:"_id,omitempty" json:"id"`
+	Question           string        `bson:"question" json:"question"`
+	TargetCompetencies []string      `bson:"target_competencies" json:"target_competencies"`
+
+	// Filter/category fields.
+	Role         string `bson:"role" json:"role"`                   // interview Level
+	Type         string `bson:"type" json:"type"`                   // interview Type
+	RigorPercent int    `bson:"rigor_percent" json:"rigor_percent"` // difficulty when generated
+
+	// Provenance / future-proofing meta (captured at insert; cheap to store, useful later
+	// for filtering, analytics, dedup, and tracing where a question came from).
+	Model             string        `bson:"model" json:"model"`                             // generating model, e.g. gemma4:e4b / claude-sonnet-4-6
+	SourceInterviewID bson.ObjectID `bson:"source_interview_id" json:"source_interview_id"` // interview it was generated for (provenance only, NOT a reuse link)
+	JobTitle          string        `bson:"job_title,omitempty" json:"job_title,omitempty"` // JD title at generation time (context)
+	UsedCount         int           `bson:"used_count" json:"used_count"`                   // times reused from the pond; drives least-used rotation (incremented on reuse)
+	CreatedAt         time.Time     `bson:"created_at" json:"created_at"`                   // when added to the pond
 }

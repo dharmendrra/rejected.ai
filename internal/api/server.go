@@ -66,7 +66,7 @@ func NewServer(cfg *config.Config, st *store.Store, provider *llm.Provider) *Ser
 		LLM:       provider,
 		Documents: documents.NewService(provider, st),
 		Interview: interview.NewService(provider, st, cap, ev, conf, asm),
-		Report:    report.NewService(st, ev, conf, eval, sig, rk, rec, provider),
+		Report:    report.NewService(st, ev, conf, eval, sig, rk, rec, provider, cap),
 		Media:     media.NewService(st, transcriber, detector),
 		Learning:  learning.NewService(st),
 	}
@@ -112,6 +112,10 @@ func (s *Server) Routes() http.Handler {
 
 	// Progress Dashboard — aggregated portfolio view across all interviews.
 	mux.HandleFunc("GET /api/dashboard", s.handleDashboard)
+
+	// Question Pond endpoints
+	mux.HandleFunc("GET /api/questions-pond", s.handleListQuestionsPond)
+	mux.HandleFunc("GET /api/questions-pond/count", s.handleCountQuestionsPond)
 
 	return withLogging(withCORS(mux))
 }

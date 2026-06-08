@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dharmendra/rejected.ai/internal/capability"
 	"github.com/dharmendra/rejected.ai/internal/confidence"
 	"github.com/dharmendra/rejected.ai/internal/domain"
 	"github.com/dharmendra/rejected.ai/internal/evaluators"
@@ -34,11 +35,12 @@ type Service struct {
 	Risk           *risk.Service
 	Recommendation *recommendation.Service
 	LLM            *llm.Provider
+	Capability     *capability.Service
 }
 
 // NewService wires the report Service.
-func NewService(st *store.Store, ev *evidence.Service, conf *confidence.Service, eval *evaluators.Service, sig *signals.Service, rk *risk.Service, rec *recommendation.Service, provider *llm.Provider) *Service {
-	return &Service{Store: st, Evidence: ev, Confidence: conf, Evaluators: eval, Signals: sig, Risk: rk, Recommendation: rec, LLM: provider}
+func NewService(st *store.Store, ev *evidence.Service, conf *confidence.Service, eval *evaluators.Service, sig *signals.Service, rk *risk.Service, rec *recommendation.Service, provider *llm.Provider, cap *capability.Service) *Service {
+	return &Service{Store: st, Evidence: ev, Confidence: conf, Evaluators: eval, Signals: sig, Risk: rk, Recommendation: rec, LLM: provider, Capability: cap}
 }
 
 // Report is the assembled final assessment read model.
@@ -65,9 +67,67 @@ func (s *Service) Generate(ctx context.Context, interviewID bson.ObjectID, onSte
 	if err := s.Store.Coll(store.CollInterviews).FindOne(ctx, bson.D{{Key: "_id", Value: interviewID}}).Decode(&iv); err != nil {
 		return nil, fmt.Errorf("load interview: %w", err)
 	}
+
+	// Ensure capability graph is ready (Pond mode wait/sync-fallback).
+	if iv.GraphStatus == "building" {
+		timeout := time.After(20 * time.Second)
+		ticker := time.NewTicker(500 * time.Millisecond)
+		defer ticker.Stop()
+
+	waitLoop:
+		for {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-timeout:
+				log.Printf("[REPORT] Timeout waiting for background graph build for interview %s, falling back to sync build", interviewID.Hex())
+				break waitLoop
+			case <-ticker.C:
+				if err := s.Store.Coll(store.CollInterviews).FindOne(ctx, bson.D{{Key: "_id", Value: interviewID}}).Decode(&iv); err != nil {
+					log.Printf("[REPORT] Failed to reload interview during graph wait: %v", err)
+				}
+				if iv.GraphStatus != "building" {
+					break waitLoop
+				}
+			}
+		}
+	}
+
 	var graphs domain.CapabilityGraphSet
-	if err := s.Store.Coll(store.CollCapabilityGraphs).FindOne(ctx, bson.D{{Key: "interview_id", Value: interviewID}}).Decode(&graphs); err != nil {
-		return nil, fmt.Errorf("load graphs: %w", err)
+	loadErr := s.Store.Coll(store.CollCapabilityGraphs).FindOne(ctx, bson.D{{Key: "interview_id", Value: interviewID}}).Decode(&graphs)
+	if loadErr != nil {
+		// Sync fallback: build graph now.
+		log.Printf("[REPORT] Graph not ready or missing for interview %s, building synchronously", interviewID.Hex())
+		var jd domain.JobDescription
+		if err := s.Store.Coll(store.CollJobDescriptions).FindOne(ctx, bson.D{{Key: "_id", Value: iv.JobDescriptionID}}).Decode(&jd); err != nil {
+			return nil, fmt.Errorf("sync graph fallback: load job description: %w", err)
+		}
+		var cp domain.CandidateProfile
+		if err := s.Store.Coll(store.CollCandidateProfile).FindOne(ctx, bson.D{{Key: "_id", Value: iv.CandidateProfileID}}).Decode(&cp); err != nil {
+			return nil, fmt.Errorf("sync graph fallback: load candidate profile: %w", err)
+		}
+
+		syncGraphs, err := s.Capability.Build(ctx, iv.Level, iv.Type, &jd, &cp)
+		if err != nil {
+			return nil, fmt.Errorf("sync graph fallback build: %w", err)
+		}
+		syncGraphs.InterviewID = iv.ID
+		syncGraphs.CreatedAt = time.Now().UTC()
+		_, _ = s.Store.Coll(store.CollCapabilityGraphs).DeleteMany(ctx, bson.D{{Key: "interview_id", Value: iv.ID}})
+		_, err = s.Store.Coll(store.CollCapabilityGraphs).InsertOne(ctx, syncGraphs)
+		if err != nil {
+			return nil, fmt.Errorf("sync graph fallback save: %w", err)
+		}
+		graphs = *syncGraphs
+
+		comps := capability.DeriveCompetencies(syncGraphs)
+		_, _ = s.Store.Coll(store.CollInterviews).UpdateByID(ctx, iv.ID, bson.D{
+			{Key: "$set", Value: bson.D{
+				{Key: "graph_status", Value: "ready"},
+				{Key: "competencies", Value: comps},
+				{Key: "updated_at", Value: time.Now().UTC()},
+			}},
+		})
 	}
 
 	scores, err := s.Confidence.Finalize(ctx, interviewID)

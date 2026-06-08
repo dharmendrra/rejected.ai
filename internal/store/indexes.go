@@ -59,6 +59,9 @@ func (s *Store) EnsureIndexes(ctx context.Context) error {
 		CollReportProgress: {
 			{Keys: bson.D{{Key: "interview_id", Value: 1}}},
 		},
+		CollQuestionsPond: {
+			{Keys: bson.D{{Key: "role", Value: 1}, {Key: "type", Value: 1}}},
+		},
 	}
 
 	for coll, models := range specs {

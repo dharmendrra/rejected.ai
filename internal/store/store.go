@@ -26,10 +26,11 @@ const (
 	CollSignals          = "signals"
 	CollRiskAreas        = "risk_areas"
 	CollRecommendations  = "recommendations"
-	CollHistoricalTrends = "historical_trends"
-	CollIdealResponses   = "ideal_responses"
-	CollReportProgress   = "report_progress"
+	CollHistoricalTrends  = "historical_trends"
+	CollIdealResponses    = "ideal_responses"
+	CollReportProgress    = "report_progress"
 	CollCandidateCoaching = "candidate_coaching"
+	CollQuestionsPond     = "questions_pond"
 )
 
 // Store holds the Mongo client and the active database handle.

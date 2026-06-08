@@ -6,6 +6,7 @@ package capability
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/dharmendra/rejected.ai/internal/domain"
 	"github.com/dharmendra/rejected.ai/internal/llm"
@@ -79,4 +80,27 @@ func (s *Service) Build(ctx context.Context, level, iType string, jd *domain.Job
 		return nil, fmt.Errorf("build capability graphs: %w", err)
 	}
 	return &set, nil
+}
+
+// DeriveCompetencies infers the competency set from the capability graph set.
+func DeriveCompetencies(g *domain.CapabilityGraphSet) []string {
+	seen := map[string]bool{}
+	var out []string
+	add := func(name string) {
+		key := strings.ToLower(strings.TrimSpace(name))
+		if key == "" || seen[key] {
+			return
+		}
+		seen[key] = true
+		out = append(out, name)
+	}
+	for _, vt := range g.ValidationTargets {
+		add(vt.Competency)
+	}
+	for _, t := range g.Target {
+		if t.Weight >= 0.5 {
+			add(t.Name)
+		}
+	}
+	return out
 }
