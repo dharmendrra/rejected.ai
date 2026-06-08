@@ -37,9 +37,11 @@ export interface Interview {
   level: string;
   type: string;
   duration_min: number;
+  rigor_percent: number;
   status: string;
   competencies: string[];
   created_at: string;
+  updated_at: string;
 }
 
 export interface Turn {
@@ -242,6 +244,7 @@ export const api = {
     level: string;
     type: string;
     duration_min: number;
+    rigor_percent: number;
   }) => req<CreateResult>("/api/interviews", { method: "POST", body: JSON.stringify(body) }),
   submitAnswer: (id: string, answer: string) =>
     req<AnswerResult>(`/api/interviews/${id}/answer`, { method: "POST", body: JSON.stringify({ answer }) }),

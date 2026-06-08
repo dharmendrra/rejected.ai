@@ -97,6 +97,7 @@ type Interview struct {
 	Level              string        `bson:"level" json:"level"`
 	Type               string        `bson:"type" json:"type"`
 	DurationMin        int           `bson:"duration_min" json:"duration_min"`
+	RigorPercent       int           `bson:"rigor_percent" json:"rigor_percent"`
 	Status             string        `bson:"status" json:"status"`
 	Competencies       []string      `bson:"competencies" json:"competencies"` // inferred dynamically
 	CreatedAt          time.Time     `bson:"created_at" json:"created_at"`

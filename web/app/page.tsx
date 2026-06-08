@@ -27,6 +27,7 @@ export default function Home() {
   const [level, setLevel] = useState("Senior Engineer");
   const [type, setType] = useState("Mixed");
   const [duration, setDuration] = useState(20);
+  const [rigorPercent, setRigorPercent] = useState(50);
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState("");
   const [error, setError] = useState("");
@@ -46,6 +47,7 @@ export default function Home() {
         level,
         type,
         duration_min: duration,
+        rigor_percent: rigorPercent,
       });
       router.push(`/interview/${created.interview.id}`);
     } catch (e) {
@@ -166,10 +168,31 @@ export default function Home() {
           </div>
         </div>
 
+        <div style={{ marginTop: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <label style={{ margin: 0, display: "flex", alignItems: "center", gap: 6 }}>
+              Interview Rigor / Difficulty: <strong style={{ color: "var(--accent)", fontSize: "14px" }}>{rigorPercent}%</strong>
+            </label>
+            <span style={{ fontSize: "12px", color: "var(--muted)", fontWeight: 500 }}>
+              {rigorPercent <= 20 ? "🟢 Low (Conceptual & syntax checks)" :
+               rigorPercent <= 60 ? "🟡 Medium (Standard optimization & screenings)" :
+               "🔴 High (Deep system design & hard architectural trade-offs)"}
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={rigorPercent}
+            onChange={(e) => setRigorPercent(Number(e.target.value))}
+            style={{ marginTop: 8 }}
+          />
+        </div>
+
         {error && <div className="error">{error}</div>}
         {busy && <p className="spin">⏳ {step}</p>}
 
-        <div style={{ marginTop: 16 }}>
+        <div style={{ marginTop: 20 }}>
           <button onClick={start} disabled={busy || !jd.trim() || (!resumeFile && !resume.trim())}>
             {busy ? "Working…" : "Start interview"}
           </button>

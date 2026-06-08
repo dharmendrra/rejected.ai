@@ -329,6 +329,13 @@ export default function ReportPage() {
           </div>
 
           <div>
+            <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--muted)", marginBottom: "4px", fontWeight: "600" }}>Rigor Target</div>
+            <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>
+              {view.interview?.rigor_percent !== undefined ? `${view.interview.rigor_percent}%` : "50%"}
+            </div>
+          </div>
+
+          <div>
             <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--muted)", marginBottom: "4px", fontWeight: "600" }}>Report Completed</div>
             <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>
               {(() => {
@@ -747,7 +754,7 @@ export default function ReportPage() {
           </div>
           
           <div className="grid two" style={{ gap: "20px" }}>
-            {((report.coaching_items && report.coaching_items.length > 0) ? report.coaching_items : (report.recommendation?.confidence_level < 0.6 ? MOCK_COACHING_LOW : MOCK_COACHING_HIGH)).map((item: any, i: number) => {
+            {((report.coaching_items && report.coaching_items.length > 0) ? report.coaching_items : ((report.recommendation?.confidence_level ?? 0) < 0.6 ? MOCK_COACHING_LOW : MOCK_COACHING_HIGH)).map((item: any, i: number) => {
               const cat = CATEGORY_MAP[item.category] || { label: item.category, icon: "💡" };
               let borderColor = "var(--accent)";
               let bgTag = "rgba(111,211,255,0.08)";
@@ -840,7 +847,7 @@ export default function ReportPage() {
                     <div style={{ marginTop: "8px" }}>
                       <div className="small muted" style={{ fontWeight: "700", marginBottom: "4px", fontSize: "11px", textTransform: "uppercase" }}>Action Steps:</div>
                       <ul style={{ margin: "0 0 0 16px", padding: 0, fontSize: "12px", color: "var(--text)" }}>
-                        {item.action_points.map((ap, apIdx) => (
+                        {item.action_points.map((ap: string, apIdx: number) => (
                           <li key={apIdx} style={{ marginBottom: "2px" }}>{ap}</li>
                         ))}
                       </ul>

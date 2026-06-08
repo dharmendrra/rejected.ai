@@ -21,10 +21,14 @@ time. Rules:
 - Prioritize competencies with low confidence and high validation priority.
 - Use the conversation so far; build on prior answers, don't repeat ground already covered.
 - Match depth to the interview level and type, and to the time remaining.
+- Strictly calibrate the depth, hardness, and complexity of the question to match the target rigor/difficulty percentage:
+  * Low Rigor (0-20%%): Basic conceptual checks, syntax, simple behavioral recall.
+  * Medium Rigor (40-60%%): Standard technical screenings, standard optimizations, structured behavioral analysis.
+  * High Rigor (80-100%%): Bare-metal system design, low-level compilers/runtimes from scratch, deep socio-technical org restructuring scenarios (EM).
 - Ask a single, focused question.
 Respond with a single JSON object and no prose.`
 
-const questionUserTmpl = `Interview level: %s | type: %s
+const questionUserTmpl = `Interview level: %s | type: %s | rigor/difficulty: %d%%
 This is question %d of approximately %d.
 
 Validation targets (highest priority first):
@@ -53,7 +57,7 @@ func (s *Service) generateQuestion(ctx context.Context, iv *domain.Interview, gr
 	}
 
 	user := fmt.Sprintf(questionUserTmpl,
-		iv.Level, iv.Type, turnNum, questionBudget(iv.DurationMin),
+		iv.Level, iv.Type, iv.RigorPercent, turnNum, questionBudget(iv.DurationMin),
 		llm.MarshalCompact(graphs.ValidationTargets),
 		renderConfidenceGaps(latest),
 		buildMemory(ts),

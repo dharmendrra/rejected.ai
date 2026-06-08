@@ -65,7 +65,7 @@ do not penalize brevity. Build directly on what they just said. Respond with a s
 object and no prose.`
 
 const followupUserTmpl = `Competency to validate: %s
-Interview level: %s | type: %s
+Interview level: %s | type: %s | rigor/difficulty: %d%%
 
 Conversation so far:
 %s
@@ -79,7 +79,7 @@ func (s *Service) generateFollowup(ctx context.Context, iv *domain.Interview, co
 	if err != nil {
 		return nil, err
 	}
-	user := fmt.Sprintf(followupUserTmpl, comp, iv.Level, iv.Type, buildMemory(ts))
+	user := fmt.Sprintf(followupUserTmpl, comp, iv.Level, iv.Type, iv.RigorPercent, buildMemory(ts))
 
 	var qr questionResult
 	if err := llm.CallJSON(ctx, s.LLM.Caller, followupSystem, user, &qr); err != nil {

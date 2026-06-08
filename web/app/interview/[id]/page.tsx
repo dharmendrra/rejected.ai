@@ -257,7 +257,7 @@ export default function InterviewRunner() {
         <div className="panel">
           <div className="flex between" style={{ alignItems: "center" }}>
             <h2>
-              {view.interview.level} · {view.interview.type}
+              {view.interview.level} · {view.interview.type} · {view.interview.rigor_percent}% rigor
             </h2>
             <div className="flex" style={{ gap: 8, alignItems: "center" }}>
               {timeLeft !== null && !completed && (

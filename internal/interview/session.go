@@ -41,6 +41,7 @@ type CreateRequest struct {
 	Level              string `json:"level"`
 	Type               string `json:"type"`
 	DurationMin        int    `json:"duration_min"`
+	RigorPercent       int    `json:"rigor_percent"`
 }
 
 // CreateResult is returned when an interview starts.
@@ -80,6 +81,9 @@ func (s *Service) CreateSession(ctx context.Context, req CreateRequest) (*Create
 	if req.DurationMin <= 0 {
 		req.DurationMin = 20
 	}
+	if req.RigorPercent <= 0 {
+		req.RigorPercent = 50
+	}
 
 	graphs, err := s.Capability.Build(ctx, req.Level, req.Type, &jd, &cp)
 	if err != nil {
@@ -94,6 +98,7 @@ func (s *Service) CreateSession(ctx context.Context, req CreateRequest) (*Create
 		Level:              req.Level,
 		Type:               req.Type,
 		DurationMin:        req.DurationMin,
+		RigorPercent:       req.RigorPercent,
 		Status:             domain.StatusActive,
 		Competencies:       competencies,
 		CreatedAt:          now,
