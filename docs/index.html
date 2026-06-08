@@ -347,31 +347,31 @@
 <section id="how" class="section-alt">
   <div class="wrap">
     <div class="eyebrow">The defining behavior</div>
-    <h2>The evidence loop</h2>
-    <p class="lead">Each turn feeds a recompute over the full ledger. Because the whole history is re-evaluated every time, re-scoring earlier answers in light of later ones is structural — not a bolt-on.</p>
+    <h2>The deferred evidence loop</h2>
+    <p class="lead">Each turn's answer is recorded with low latency during the live interview. When generating the report, a background thread replays the session, extracting evidence and rescoring confidence turn-by-turn. Because the whole history is re-evaluated sequentially, re-scoring earlier answers in light of later ones is structural — not a bolt-on.</p>
 
     <div class="loop">
-      <span class="node">Question</span>
+      <span class="node">Questions Upfront</span>
       <span class="arrow">→</span>
-      <span class="node">Evidence</span>
+      <span class="node">Direct Answer Saving</span>
       <span class="arrow">→</span>
-      <span class="node">Confidence update</span>
+      <span class="node alt">Deferred Evaluation Loop</span>
       <span class="arrow">→</span>
-      <span class="node">New evidence</span>
+      <span class="node">Evidence Extraction</span>
       <span class="arrow">→</span>
-      <span class="node alt">Retroactive re-scoring</span>
+      <span class="node">Confidence Recompute</span>
     </div>
-    <p class="loop-note">…repeated per turn, with a confidence snapshot captured each time for replay.</p>
+    <p class="loop-note">…repeated sequentially per turn, with a confidence snapshot captured each time for retroactive re-scoring &amp; replay.</p>
 
     <figure class="diagram">
-      <img src="diagrams/architecture.svg" alt="rejected.ai data flow: JD and resume build capability graphs, which drive dynamic questions; each answer yields concept-linked evidence into the evidence ledger; confidence is recomputed over the entire ledger, retroactively re-scoring earlier evidence and emitting a per-turn snapshot; when evidence is insufficient a follow-up question is asked, otherwise a cited report is produced." />
-      <figcaption>End-to-end data flow — the confidence recompute reads the whole ledger and writes retroactive revisions back into it.</figcaption>
+      <img src="diagrams/architecture.svg" alt="rejected.ai data flow: JD and resume build capability graphs, which pre-generate questions; the live candidate answers are saved directly to MongoDB; when generating the report, a background thread replays the turns sequentially, running evidence extraction and confidence rescoring over the entire ledger, writing retroactive scoring revisions and per-turn snapshots, before outputting the cited report." />
+      <figcaption>End-to-end data flow — setup generates questions, the live runner persists answers, and the deferred background engine runs the confidence recompute sequentially over the ledger.</figcaption>
     </figure>
 
     <div class="grid grid-2" style="margin-top:28px;">
       <div class="card">
         <h3>Why it self-corrects</h3>
-        <p>Confidence isn't accumulated incrementally — it's recomputed from scratch over the full evidence ledger on every turn. That makes retroactive re-scoring a property of the design, so a terse early "duplicate handling" can be lifted once a later answer explains idempotency and exactly-once semantics.</p>
+        <p>Confidence isn't accumulated incrementally — it's recomputed from scratch over the full evidence ledger on every turn. That makes retroactive re-scoring a property of the design, so a terse early &quot;duplicate handling&quot; can be lifted once a later answer explains idempotency and exactly-once semantics.</p>
       </div>
       <div class="card">
         <h3>Why it's explainable</h3>

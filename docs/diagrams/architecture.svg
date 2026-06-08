@@ -1,101 +1,132 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="800" viewBox="0 0 1220 800" font-family="Inter, 'Segoe UI', sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="760" viewBox="0 0 1220 760" font-family="Outfit, 'Segoe UI', sans-serif">
   <defs>
     <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L8,3 L0,6 Z" fill="#2563eb"/>
+      <path d="M0,0 L8,3 L0,6 Z" fill="#3b82f6"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#10b981"/>
     </marker>
     <style>
-      .box   { stroke-width: 2px; rx: 12; }
-      .input { fill:#f1f5f9; stroke:#64748b; }
-      .svc   { fill:#dbeafe; stroke:#2563eb; }
-      .store { fill:#fef9c3; stroke:#ca8a04; }
-      .core  { fill:#dcfce7; stroke:#16a34a; stroke-width:2.6px; }
-      .out   { fill:#ffffff; stroke:#94a3b8; }
-      .title { font-size:23px; font-weight:700; fill:#0f172a; }
-      .sub   { font-size:17px; fill:#475569; }
-      .edge  { stroke:#2563eb; stroke-width:2.5px; fill:none; }
-      .lbl   { font-size:16px; fill:#334155; paint-order:stroke; stroke:#ffffff; stroke-width:6px; stroke-linejoin:round; }
-      .phase { font-size:20px; font-weight:700; fill:#94a3b8; }
+      .bg    { fill: #0b0f19; }
+      .box   { stroke-width: 1.5px; rx: 14; }
+      .input { fill: #111827; stroke: #4b5563; }
+      .svc   { fill: #1e293b; stroke: #3b82f6; }
+      .store { fill: #2c1e11; stroke: #d97706; }
+      .core  { fill: #064e3b; stroke: #10b981; stroke-width: 2px; }
+      .out   { fill: #111827; stroke: #9ca3af; }
+      .title { font-size: 19px; font-weight: 700; fill: #ffffff; }
+      .sub   { font-size: 14px; fill: #9ca3af; }
+      .edge  { stroke: #3b82f6; stroke-width: 2px; fill: none; }
+      .edge-green { stroke: #10b981; stroke-width: 2px; fill: none; }
+      .lbl   { font-size: 14px; font-weight: 500; fill: #9ca3af; paint-order: stroke; stroke: #0b0f19; stroke-width: 5px; stroke-linejoin: round; }
+      .phase { font-size: 18px; font-weight: 700; fill: #3b82f6; }
     </style>
   </defs>
 
-  <!-- phase labels -->
-  <text class="phase" x="52" y="44">① Setup pipeline</text>
-  <text class="phase" x="1186" y="410" text-anchor="middle" transform="rotate(-90 1186 410)">② Interview evidence loop</text>
+  <!-- Background -->
+  <rect width="100%" height="100%" class="bg"/>
 
-  <!-- ================= EDGES ================= -->
-  <!-- setup row -->
-  <path class="edge" d="M245,132 L326,132" marker-end="url(#arrow)"/>
-  <path class="edge" d="M585,132 L731,132" marker-end="url(#arrow)"/>
-  <!-- vertical loop -->
-  <path class="edge" d="M840,180 L840,228" marker-end="url(#arrow)"/>
-  <path class="edge" d="M840,310 L840,366" marker-end="url(#arrow)"/>
-  <path class="edge" d="M840,456 L840,512" marker-end="url(#arrow)"/>
-  <path class="edge" d="M840,596 L840,648" marker-end="url(#arrow)"/>
-  <!-- confidence outputs -->
-  <path class="edge" d="M700,701 L484,701" marker-end="url(#arrow)"/>
-  <path class="edge" d="M980,690 L1002,690" marker-end="url(#arrow)"/>
-  <!-- retroactive re-scoring (back up to ledger) -->
-  <path class="edge" d="M700,680 C628,640 648,576 731,572" marker-end="url(#arrow)"/>
-  <!-- insufficient -> next question (far-right return) -->
-  <path class="edge" d="M982,678 C1112,560 1112,250 947,136" marker-end="url(#arrow)"/>
+  <!-- Phase labels -->
+  <text class="phase" x="50" y="45">① Setup Pipeline</text>
+  <text class="phase" x="50" y="215">② Live Interview (Low Latency)</text>
+  <text class="phase" x="50" y="495">③ Deferred Evaluation Loop (Triggered on Report Request)</text>
 
-  <!-- edge labels -->
-  <text class="lbl" x="286" y="122" text-anchor="middle">structured</text>
-  <text class="lbl" x="286" y="142" text-anchor="middle">profiles</text>
-  <text class="lbl" x="658" y="120" text-anchor="middle">validation</text>
-  <text class="lbl" x="658" y="140" text-anchor="middle">targets</text>
-  <text class="lbl" x="852" y="208" text-anchor="start">answer turn</text>
-  <text class="lbl" x="852" y="342" text-anchor="start">extract</text>
-  <text class="lbl" x="852" y="487" text-anchor="start">append</text>
-  <text class="lbl" x="852" y="626" text-anchor="start">recompute</text>
-  <text class="lbl" x="592" y="688" text-anchor="middle">sufficient ✓</text>
-  <text class="lbl" x="654" y="612" text-anchor="end">retroactive</text>
-  <text class="lbl" x="654" y="632" text-anchor="end">re-scoring</text>
-  <text class="lbl" x="1128" y="408" text-anchor="middle" transform="rotate(-90 1128 408)">insufficient → next turn</text>
+  <!-- ================= SETUP ROW ================= -->
+  <!-- JD & Resume -->
+  <rect class="box input" x="50" y="75" width="200" height="75"/>
+  <text class="title" x="150" y="108" text-anchor="middle">JD + Résumé</text>
+  <text class="sub"   x="150" y="130" text-anchor="middle">Input PDF / text</text>
 
-  <!-- ================= NODES ================= -->
-  <!-- JD + Resume -->
-  <rect class="box input" x="50" y="84" width="195" height="96" rx="12"/>
-  <text class="title" x="147" y="128" text-anchor="middle">JD + Résumé</text>
-  <text class="sub"   x="147" y="154" text-anchor="middle">uploaded · parsed</text>
+  <!-- Capability Graphs -->
+  <rect class="box svc" x="350" y="75" width="220" height="75"/>
+  <text class="title" x="460" y="108" text-anchor="middle">Capability Graphs</text>
+  <text class="sub"   x="460" y="130" text-anchor="middle">Parsed skills &amp; gaps</text>
 
-  <!-- Capability graphs -->
-  <rect class="box svc" x="330" y="84" width="255" height="96" rx="12"/>
-  <text class="title" x="457" y="124" text-anchor="middle">Capability graphs</text>
-  <text class="sub"   x="457" y="152" text-anchor="middle">candidate · target · gap</text>
+  <!-- Pre-Generated Questions -->
+  <rect class="box svc" x="670" y="75" width="240" height="75"/>
+  <text class="title" x="790" y="108" text-anchor="middle">Questions (Upfront)</text>
+  <text class="sub"   x="790" y="130" text-anchor="middle">Budgeted by duration</text>
 
-  <!-- Question -->
-  <rect class="box svc" x="735" y="84" width="210" height="96" rx="12"/>
-  <text class="title" x="840" y="124" text-anchor="middle">Question</text>
-  <text class="sub"   x="840" y="152" text-anchor="middle">dynamic · per turn</text>
+  <!-- Edges Setup -->
+  <path class="edge" d="M250,112 L350,112" marker-end="url(#arrow)"/>
+  <path class="edge" d="M570,112 L670,112" marker-end="url(#arrow)"/>
 
-  <!-- Answer -->
-  <rect class="box input" x="735" y="232" width="210" height="78" rx="12"/>
-  <text class="title" x="840" y="278" text-anchor="middle">Answer</text>
+  <text class="lbl" x="300" y="102" text-anchor="middle">ingest</text>
+  <text class="lbl" x="620" y="102" text-anchor="middle">analyze</text>
 
-  <!-- Evidence extraction -->
-  <rect class="box svc" x="720" y="370" width="240" height="86" rx="12"/>
-  <text class="title" x="840" y="406" text-anchor="middle">Evidence extraction</text>
-  <text class="sub"   x="840" y="432" text-anchor="middle">concept-linked</text>
 
-  <!-- Evidence ledger -->
-  <rect class="box store" x="735" y="516" width="210" height="80" rx="12"/>
-  <text class="title" x="840" y="550" text-anchor="middle">Evidence ledger</text>
-  <text class="sub"   x="840" y="576" text-anchor="middle">append-only</text>
+  <!-- ================= LIVE RUNNER ROW ================= -->
+  <!-- Active Question -->
+  <rect class="box svc" x="670" y="245" width="240" height="75"/>
+  <text class="title" x="790" y="278" text-anchor="middle">Active Question</text>
+  <text class="sub"   x="790" y="300" text-anchor="middle">Presented sequentially</text>
 
-  <!-- Confidence recompute (CORE) -->
-  <rect class="box core" x="700" y="652" width="280" height="98" rx="12"/>
-  <text class="title" x="840" y="692" text-anchor="middle">Confidence recompute</text>
-  <text class="sub"   x="840" y="718" text-anchor="middle">over the ENTIRE ledger</text>
+  <!-- Candidate Answer -->
+  <rect class="box input" x="670" y="375" width="240" height="75"/>
+  <text class="title" x="790" y="408" text-anchor="middle">Candidate Answer</text>
+  <text class="sub"   x="790" y="430" text-anchor="middle">Text or voice input</text>
 
-  <!-- Per-turn snapshot -->
-  <rect class="box store" x="1004" y="660" width="158" height="82" rx="12"/>
-  <text class="title" x="1083" y="696" text-anchor="middle" font-size="20">Snapshot</text>
-  <text class="sub"   x="1083" y="720" text-anchor="middle" font-size="16">per-turn · replay</text>
+  <!-- MongoDB Store -->
+  <rect class="box store" x="970" y="375" width="200" height="75"/>
+  <text class="title" x="1070" y="408" text-anchor="middle">MongoDB Store</text>
+  <text class="sub"   x="1070" y="430" text-anchor="middle">Immediate save (no LLM)</text>
 
-  <!-- Hiring report -->
-  <rect class="box out" x="120" y="652" width="360" height="98" rx="12"/>
-  <text class="title" x="300" y="686" text-anchor="middle">Hiring report</text>
-  <text class="sub"   x="300" y="711" text-anchor="middle">signals · risk · recommendation</text>
-  <text class="sub"   x="300" y="733" text-anchor="middle" font-size="16">cited evidence</text>
+  <!-- Edges Live -->
+  <path class="edge" d="M790,150 L790,245" marker-end="url(#arrow)"/>
+  <path class="edge" d="M790,320 L790,375" marker-end="url(#arrow)"/>
+  <path class="edge" d="M910,412 L970,412" marker-end="url(#arrow)"/>
+
+  <text class="lbl" x="790" y="195" text-anchor="middle">initialize</text>
+  <text class="lbl" x="790" y="352" text-anchor="middle">respond</text>
+  <text class="lbl" x="940" y="402" text-anchor="middle">persist</text>
+
+
+  <!-- ================= DEFERRED EVALUATION LOOP ================= -->
+  <!-- Evidence Extraction -->
+  <rect class="box svc" x="350" y="525" width="220" height="75"/>
+  <text class="title" x="460" y="558" text-anchor="middle">Evidence Extraction</text>
+  <text class="sub"   x="460" y="580" text-anchor="middle">Extracts concepts &amp; quotes</text>
+
+  <!-- Evidence Ledger -->
+  <rect class="box store" x="670" y="525" width="220" height="75"/>
+  <text class="title" x="780" y="558" text-anchor="middle">Evidence Ledger</text>
+  <text class="sub"   x="780" y="580" text-anchor="middle">The unified ground truth</text>
+
+  <!-- Confidence Recompute -->
+  <rect class="box core" x="950" y="525" width="220" height="75"/>
+  <text class="title" x="1060" y="558" text-anchor="middle">Confidence Engine</text>
+  <text class="sub"   x="1060" y="580" text-anchor="middle">Recomputes full history</text>
+
+  <!-- Snapshot Timeline -->
+  <rect class="box store" x="950" y="655" width="220" height="75"/>
+  <text class="title" x="1060" y="688" text-anchor="middle">Snapshot Timeline</text>
+  <text class="sub"   x="1060" y="710" text-anchor="middle">Stores per-turn snapshots</text>
+
+  <!-- Cited Hiring Report -->
+  <rect class="box out" x="50" y="525" width="200" height="75"/>
+  <text class="title" x="150" y="558" text-anchor="middle">Cited Hiring Report</text>
+  <text class="sub"   x="150" y="580" text-anchor="middle">Personas + risks + decision</text>
+
+  <!-- Edges Deferred Loop -->
+  <!-- DB -> Extraction -->
+  <path class="edge" d="M1070,450 L1070,490 L460,490 L460,525" marker-end="url(#arrow)"/>
+  <!-- Extraction -> Ledger -->
+  <path class="edge" d="M570,562 L670,562" marker-end="url(#arrow)"/>
+  <!-- Ledger -> Recompute -->
+  <path class="edge-green" d="M890,562 L950,562" marker-end="url(#arrow-green)"/>
+  <!-- Recompute -> Snapshot -->
+  <path class="edge-green" d="M1060,600 L1060,655" marker-end="url(#arrow-green)"/>
+  
+  <!-- Retroactive feedback curve -->
+  <path class="edge-green" d="M1060,525 C1010,485 830,485 780,525" marker-end="url(#arrow-green)"/>
+
+  <!-- Recompute (completed all turns) -> Report -->
+  <path class="edge" d="M1060,600 L1060,635 L150,635 L150,600" marker-end="url(#arrow)"/>
+
+  <text class="lbl" x="560" y="482" text-anchor="start">trigger evaluation (sequential replay)</text>
+  <text class="lbl" x="620" y="552" text-anchor="middle">append</text>
+  <text class="lbl" x="920" y="552" text-anchor="middle">re-evaluate</text>
+  <text class="lbl" x="1070" y="632" text-anchor="start">persist snapshot</text>
+  <text class="lbl" x="895" y="475" text-anchor="middle">retroactive re-scoring</text>
+  <text class="lbl" x="600" y="628" text-anchor="middle">complete evaluation</text>
 </svg>
