@@ -110,5 +110,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/candidates/{id}/trends", s.handleComputeTrends)
 	mux.HandleFunc("GET /api/candidates/{id}/trends", s.handleGetTrends)
 
+	// Progress Dashboard — aggregated portfolio view across all interviews.
+	mux.HandleFunc("GET /api/dashboard", s.handleDashboard)
+
 	return withLogging(withCORS(mux))
 }
