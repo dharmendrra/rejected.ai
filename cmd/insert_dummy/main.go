@@ -965,6 +965,294 @@ func main() {
 		log.Fatalf("insert graphs2: %v", err)
 	}
 
+	// =========================================================================
+	// Mock Interview 3: HR Round (Sarah Connor - Strong Hire 78%)
+	// =========================================================================
+	interviewID3 := bson.NewObjectID()
+	jdID3 := jdID // We can reuse the same job description
+	candidateID3 := bson.NewObjectID()
+
+	// 1. Candidate Profile 3
+	cp3 := domain.CandidateProfile{
+		ID:           candidateID3,
+		Name:         "Sarah Connor (Mock)",
+		Raw:          "Sarah Connor resume details.",
+		Experience:   []string{"Lead Engineer at Cyberdyne (3 years)", "Senior Developer at TechSolutions (4 years)"},
+		Technologies: []string{"Go", "Python", "Kubernetes", "SQL"},
+		CreatedAt:    now,
+	}
+	_, err = st.Coll(store.CollCandidateProfile).InsertOne(ctx, cp3)
+	if err != nil {
+		log.Fatalf("insert cp3: %v", err)
+	}
+
+	// 2. Interview session 3
+	iv3 := domain.Interview{
+		ID:                 interviewID3,
+		JobDescriptionID:   jdID3,
+		CandidateProfileID: candidateID3,
+		Level:              "Staff Engineer",
+		Type:               "HR Round",
+		DurationMin:        30,
+		RigorPercent:       70,
+		Status:             domain.StatusCompleted,
+		Competencies:       []string{"Collaboration & Teamwork", "Communication Skills", "Leadership & Mentoring"},
+		CreatedAt:          now.Add(-15 * time.Minute),
+		UpdatedAt:          now,
+	}
+	_, err = st.Coll(store.CollInterviews).InsertOne(ctx, iv3)
+	if err != nil {
+		log.Fatalf("insert interview3: %v", err)
+	}
+
+	// 3. Questions 3
+	turns3 := []domain.Turn{
+		{
+			ID:                 bson.NewObjectID(),
+			InterviewID:        interviewID3,
+			Turn:               1,
+			Kind:               domain.TurnQuestion,
+			Question:           "Describe a time when you had to deal with a peer conflict or misaligned priorities on a critical release.",
+			TargetCompetencies: []string{"Collaboration & Teamwork"},
+			Answer:             "On a critical release, the product manager wanted to ship a feature that we felt wasn't ready. Instead of arguing, I scheduled a brief sync to demonstrate the performance degradation metrics, and we agreed on a staged rollout. The rollout went smoothly, protecting our service reliability.",
+			Answered:           true,
+			CompressionRatio:   1.2,
+			AskedAt:            now.Add(-14 * time.Minute),
+			AnsweredAt:         now.Add(-11 * time.Minute),
+			ResponseType:       domain.ResponseAnswer,
+			ResponseReasoning:  "Candidate handled conflict constructively using data-driven arguments and collaborative options (staged rollout).",
+		},
+		{
+			ID:                 bson.NewObjectID(),
+			InterviewID:        interviewID3,
+			Turn:               2,
+			Kind:               domain.TurnQuestion,
+			Question:           "How do you approach mentoring junior team members?",
+			TargetCompetencies: []string{"Leadership & Mentoring"},
+			Answer:             "I believe in delegation with guardrails. I pair-program with junior engineers regularly, run weekly design reviews to build their architectural intuition, and make sure they own independent sub-modules to build their confidence.",
+			Answered:           true,
+			CompressionRatio:   1.1,
+			AskedAt:            now.Add(-10 * time.Minute),
+			AnsweredAt:         now.Add(-7 * time.Minute),
+			ResponseType:       domain.ResponseAnswer,
+			ResponseReasoning:  "Candidate demonstrated excellent mentorship principles: regular pairing, constructive design reviews, and structured delegation.",
+		},
+	}
+	for _, t := range turns3 {
+		_, err = st.Coll(store.CollQuestions).InsertOne(ctx, t)
+		if err != nil {
+			log.Fatalf("insert turn3: %v", err)
+		}
+	}
+
+	// 4. Evidence Items 3
+	evidences3 := []domain.EvidenceItem{
+		{
+			ID:              bson.NewObjectID(),
+			InterviewID:     interviewID3,
+			Turn:            1,
+			Competency:      "Collaboration & Teamwork",
+			Concepts:        []string{"conflict resolution", "collaboration"},
+			Polarity:        domain.PolarityPositive,
+			Strength:        0.85,
+			SupportingQuote: "I scheduled a brief sync to demonstrate performance degradation metrics, and we agreed on a staged rollout.",
+			Interpretation:  "Strong collaborative and constructive conflict resolution skills using data-driven metrics.",
+			CreatedAt:       now,
+		},
+		{
+			ID:              bson.NewObjectID(),
+			InterviewID:     interviewID3,
+			Turn:            2,
+			Competency:      "Leadership & Mentoring",
+			Concepts:        []string{"mentorship", "delegation"},
+			Polarity:        domain.PolarityPositive,
+			Strength:        0.80,
+			SupportingQuote: "I pair-program with junior engineers regularly... and make sure they own independent sub-modules.",
+			Interpretation:  "Demonstrates high-quality structured mentoring and capacity building for junior developers.",
+			CreatedAt:       now,
+		},
+	}
+	for _, evItem := range evidences3 {
+		_, err = st.Coll(store.CollEvidenceLedger).InsertOne(ctx, evItem)
+		if err != nil {
+			log.Fatalf("insert evidence3: %v", err)
+		}
+	}
+
+	// 5. Competency Scores 3
+	scores3 := []domain.CompetencyScore{
+		{
+			ID:            bson.NewObjectID(),
+			InterviewID:   interviewID3,
+			Competency:    "Collaboration & Teamwork",
+			Confidence:    0.85,
+			Cool:          0.90,
+			Normal:        0.85,
+			Hot:           0.75,
+			EvidenceTurns: []int{1},
+			Rationale:     "Showed excellent constructive collaboration under high pressure using data-driven arguments.",
+			CreatedAt:     now,
+		},
+		{
+			ID:            bson.NewObjectID(),
+			InterviewID:   interviewID3,
+			Competency:    "Communication Skills",
+			Confidence:    0.80,
+			Cool:          0.85,
+			Normal:        0.80,
+			Hot:           0.70,
+			EvidenceTurns: []int{1, 2},
+			Rationale:     "Articulates complex team dynamics, decisions, and outcomes clearly and maturely.",
+			CreatedAt:     now,
+		},
+		{
+			ID:            bson.NewObjectID(),
+			InterviewID:   interviewID3,
+			Competency:    "Leadership & Mentoring",
+			Confidence:    0.80,
+			Cool:          0.85,
+			Normal:        0.80,
+			Hot:           0.70,
+			EvidenceTurns: []int{2},
+			Rationale:     "Strong mentorship structure including design reviews and delegated code ownership.",
+			CreatedAt:     now,
+		},
+	}
+	for _, sc := range scores3 {
+		_, err = st.Coll(store.CollCompetencyScores).InsertOne(ctx, sc)
+		if err != nil {
+			log.Fatalf("insert score3: %v", err)
+		}
+	}
+
+	// 6. Signals 3
+	sigs3 := domain.SignalsDoc{
+		ID:          bson.NewObjectID(),
+		InterviewID: interviewID3,
+		Signals: []domain.StrongestSignal{
+			{
+				Name:          "Data-Driven Peer Alignment",
+				Description:   "Uses performance metrics to resolve launch differences with product management.",
+				EvidenceTurns: []int{1},
+			},
+			{
+				Name:          "Structured Junior Mentoring",
+				Description:   "Provides clear delegation boundaries and active pair programming support.",
+				EvidenceTurns: []int{2},
+			},
+		},
+		CreatedAt: now,
+	}
+	_, err = st.Coll(store.CollSignals).InsertOne(ctx, sigs3)
+	if err != nil {
+		log.Fatalf("insert signals3: %v", err)
+	}
+
+	// 7. Risks 3
+	risks3 := domain.RiskDoc{
+		ID:          bson.NewObjectID(),
+		InterviewID: interviewID3,
+		Risks:       []domain.RiskItem{}, // No risks identified!
+		CreatedAt:   now,
+	}
+	_, err = st.Coll(store.CollRiskAreas).InsertOne(ctx, risks3)
+	if err != nil {
+		log.Fatalf("insert risks3: %v", err)
+	}
+
+	// 8. Recommendation 3
+	rec3 := domain.Recommendation{
+		ID:              bson.NewObjectID(),
+		InterviewID:     interviewID3,
+		Decision:        "hire",
+		ConfidenceLevel: 0.78,
+		Reasoning:       "Sarah Connor showed high maturity, strong peer collaboration metrics, and structured leadership. Strongly aligned with the behavioral and mentoring expectations of a Staff Software Engineer.",
+		Citations: []domain.Citation{
+			{Competency: "Collaboration & Teamwork", Turns: []int{1}, Note: "Staged rollout compromise"},
+			{Competency: "Leadership & Mentoring", Turns: []int{2}, Note: "Delegation with guardrails model"},
+		},
+		Personas: []domain.PersonaView{
+			{
+				Persona:      "Engineering Manager",
+				OverallTake:  "Excellent behavioral fit. Demonstrates core values of ownership, collaboration, and structured development.",
+				Endorsements: []string{"Strong conflict resolution", "Action-oriented mentorship"},
+				Concerns:     []string{},
+				PerCompetency: []domain.PersonaCompetency{
+					{
+						Competency: "Collaboration & Teamwork",
+						Score:      0.88,
+						Reasoning:  "Uses metrics to align stakeholders.",
+					},
+					{
+						Competency: "Leadership & Mentoring",
+						Score:      0.85,
+						Reasoning:  "Builds team capacity productively.",
+					},
+				},
+			},
+		},
+		CreatedAt: now,
+	}
+	_, err = st.Coll(store.CollRecommendations).InsertOne(ctx, rec3)
+	if err != nil {
+		log.Fatalf("insert recommendation3: %v", err)
+	}
+
+	// 9. Ideal Responses 3
+	ideal3 := domain.IdealResponsesDoc{
+		ID:          bson.NewObjectID(),
+		InterviewID: interviewID3,
+		Responses: []domain.IdealResponse{
+			{
+				Question:     "Describe a time when you had to deal with a peer conflict or misaligned priorities on a critical release.",
+				Competency:   "Collaboration & Teamwork",
+				KeyPoints:    []string{"constructive compromise", "data-driven arguments", "maintaining positive relationships"},
+				SampleAnswer: "In conflict situations, it is essential to focus on shared objectives and objective metrics. Propose staging rollouts or A/B testing to align product features with technical safety...",
+			},
+		},
+		CreatedAt: now,
+	}
+	_, err = st.Coll(store.CollIdealResponses).InsertOne(ctx, ideal3)
+	if err != nil {
+		log.Fatalf("insert ideal responses3: %v", err)
+	}
+
+	// 10. Report Progress 3
+	progress3 := domain.ReportProgress{
+		ID:             bson.NewObjectID(),
+		InterviewID:    interviewID3,
+		Status:         "completed",
+		TotalSteps:     len(steps),
+		CompletedSteps: len(steps),
+		CurrentStep:    "Completed",
+		Steps:          steps,
+		CreatedAt:      now.Add(-10 * time.Minute),
+		UpdatedAt:      now,
+	}
+	_, err = st.Coll(store.CollReportProgress).InsertOne(ctx, progress3)
+	if err != nil {
+		log.Fatalf("insert progress3: %v", err)
+	}
+
+	// 11. Insert Capability Graph Set 3
+	graphs3 := domain.CapabilityGraphSet{
+		ID:          bson.NewObjectID(),
+		InterviewID: interviewID3,
+		Candidate: []domain.Capability{
+			{Name: "Mentorship", Category: "Leadership", Evidence: []string{"Mentored junior devs"}, Strength: 0.8},
+		},
+		Target: []domain.TargetCapability{
+			{Name: "Collaboration", Category: "Soft Skills", Importance: "required", Weight: 0.8},
+			{Name: "Communication", Category: "Soft Skills", Importance: "required", Weight: 0.9},
+		},
+		Strengths: []string{"Collaboration and mentoring approach"},
+		CreatedAt: now,
+	}
+	_, err = st.Coll(store.CollCapabilityGraphs).InsertOne(ctx, graphs3)
+	if err != nil {
+		log.Fatalf("insert graphs3: %v", err)
+	}
+
 	fmt.Printf("\n========================================================\n")
 	fmt.Printf("MOCK INTERVIEW ROUNDS GENERATED SUCCESSFULLY!\n")
 	fmt.Printf("========================================================\n")
@@ -974,5 +1262,8 @@ func main() {
 	fmt.Printf("\n2. Candidate: %s (No Hire - 38%% Warning Color!)\n", cp2.Name)
 	fmt.Printf("   - Interview Turn Details: http://localhost:3000/interview/%s\n", interviewID2.Hex())
 	fmt.Printf("   - Hiring Intelligence Report: http://localhost:3000/interview/%s/report\n", interviewID2.Hex())
+	fmt.Printf("\n3. Candidate: %s (Hire - 78%% HR Round)\n", cp3.Name)
+	fmt.Printf("   - Interview Turn Details: http://localhost:3000/interview/%s\n", interviewID3.Hex())
+	fmt.Printf("   - Hiring Intelligence Report: http://localhost:3000/interview/%s/report\n", interviewID3.Hex())
 	fmt.Printf("========================================================\n\n")
 }
