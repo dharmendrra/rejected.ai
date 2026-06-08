@@ -199,6 +199,127 @@ const MOCK_COACHING_HIGH = [
   }
 ];
 
+const MOCK_COACHING_HR_LOW = [
+  {
+    category: "communication",
+    severity: "warning",
+    title: "Structuring Behavioral Answers",
+    description: "You struggled to explain a past conflict clearly. Lead with the context, describe the specific action you took, and clearly state the resolution.",
+    action_points: [
+      "Use the STAR method (Situation, Task, Action, Result) for all behavioral questions.",
+      "Focus on your personal actions rather than 'we'."
+    ]
+  },
+  {
+    category: "study",
+    severity: "warning",
+    title: "Situational Conflict Resolution",
+    description: "Your conflict resolution examples lacked depth in showing how you navigated different perspectives.",
+    action_points: [
+      "Prepare 2 distinct examples of resolving peer disagreements.",
+      "Study common framework principles for constructive feedback."
+    ]
+  },
+  {
+    category: "what_if",
+    severity: "info",
+    title: "What-If: Mentorship Examples",
+    description: "If you had detailed how you mentored junior engineers during the team transition, your Leadership competency score would have reached 85%.",
+    action_points: []
+  },
+  {
+    category: "contradiction",
+    severity: "warning",
+    title: "Contradiction: Work style preference",
+    description: "You stated you prefer working highly autonomously in Q1, but in Q3 you claimed you perform best in tightly-coupled pair-programming setups. Align your team-collaboration preferences.",
+    action_points: ["Clarify your ideal team communication pace and environment."]
+  },
+  {
+    category: "seniority",
+    severity: "warning",
+    title: "Leadership Seniority Gap",
+    description: "Your behavioral responses matched a Senior developer. To show Staff/Lead capability, emphasize mentoring, organization-wide impact, and steering team direction.",
+    target_level: "Staff Engineer",
+    observed_level: "Senior Engineer",
+    action_points: [
+      "Proactively highlight project planning and roadmap influence.",
+      "Show how you resolved team-wide process inefficiencies."
+    ]
+  },
+  {
+    category: "jd_match",
+    severity: "warning",
+    title: "JD Checklist Gap: Cross-functional Collaboration",
+    description: "The JD emphasizes collaboration with Product and Design, but you only discussed working with engineering peers.",
+    action_points: ["Share examples of collaborating directly with Product Managers and UI designers."]
+  },
+  {
+    category: "presence",
+    severity: "success",
+    title: "Response Presence",
+    description: "You maintained excellent focus (gaze-on-screen share was 92%) and an optimal speaking pace (130 WPM).",
+    action_points: ["Maintain this exact pace in future interviews."]
+  }
+];
+
+const MOCK_COACHING_HR_HIGH = [
+  {
+    category: "communication",
+    severity: "success",
+    title: "Strong Behavioral Structure",
+    description: "You consistently used the STAR framework to structure your past experiences, making them highly readable and clear.",
+    action_points: [
+      "Keep using this structured approach for senior behavioral interviews."
+    ]
+  },
+  {
+    category: "study",
+    severity: "info",
+    title: "Executive Presence",
+    description: "You demonstrated great maturity, but could further highlight strategic business alignment for executive levels.",
+    action_points: [
+      "Prepare a summary of how your technical decisions impacted company revenue or metrics."
+    ]
+  },
+  {
+    category: "what_if",
+    severity: "success",
+    title: "What-If: Cultural Leadership",
+    description: "Your description of organizing peer-learning circles scored 95%. This strongly verified your team culture impact.",
+    action_points: []
+  },
+  {
+    category: "contradiction",
+    severity: "success",
+    title: "No Logical Contradictions",
+    description: "Your work preferences and collaboration style descriptions were highly consistent throughout the interview.",
+    action_points: []
+  },
+  {
+    category: "seniority",
+    severity: "success",
+    title: "Strong Leadership Maturity",
+    description: "Your answers demonstrated clear Staff-level leadership, team mentorship, and collaborative problem-solving.",
+    target_level: "Staff Engineer",
+    observed_level: "Staff Engineer",
+    action_points: []
+  },
+  {
+    category: "jd_match",
+    severity: "success",
+    title: "JD Expectations Matched",
+    description: "You thoroughly covered all cross-functional and delivery criteria highlighted in the job description.",
+    action_points: []
+  },
+  {
+    category: "presence",
+    severity: "success",
+    title: "Excellent Presence",
+    description: "Your response delivery was calm, well-paced (135 WPM), with very low filler word rates (1.2%).",
+    action_points: []
+  }
+];
+
 export default function ReportPage() {
   const { id } = useParams<{ id: string }>();
   const [report, setReport] = useState<Report | null>(null);
@@ -754,7 +875,12 @@ export default function ReportPage() {
           </div>
           
           <div className="grid two" style={{ gap: "20px" }}>
-            {((report.coaching_items && report.coaching_items.length > 0) ? report.coaching_items : ((report.recommendation?.confidence_level ?? 0) < 0.6 ? MOCK_COACHING_LOW : MOCK_COACHING_HIGH)).map((item: any, i: number) => {
+            {((report.coaching_items && report.coaching_items.length > 0)
+              ? report.coaching_items
+              : (view?.interview?.type === "HR Round"
+                ? ((report.recommendation?.confidence_level ?? 0) < 0.6 ? MOCK_COACHING_HR_LOW : MOCK_COACHING_HR_HIGH)
+                : ((report.recommendation?.confidence_level ?? 0) < 0.6 ? MOCK_COACHING_LOW : MOCK_COACHING_HIGH)
+              )).map((item: any, i: number) => {
               const cat = CATEGORY_MAP[item.category] || { label: item.category, icon: "💡" };
               let borderColor = "var(--accent)";
               let bgTag = "rgba(111,211,255,0.08)";
