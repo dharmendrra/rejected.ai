@@ -18,7 +18,6 @@ flowchart TD
         JD["Job Description<br>(Raw Text / Paste)"] --> IngestService["Ingestion Service<br>(Backend server :8080)"]
         CV["Candidate Resume<br>(Raw Text / Upload)"] --> IngestService
         IngestService -->|structure & parse| LLMGen["Ollama / Claude<br>(Gemma / Sonnet)"]
-        IngestService -->|embed capabilities| OllamaEmbed["Ollama Embedder<br>(nomic-embed-text)"]
         IngestService -->|upsert baseline graphs| DBGraphs[("MongoDB Store<br>(capability_graphs)")]
     end
 
@@ -57,7 +56,7 @@ flowchart TD
     class JD,CV primary;
     class IngestService,ServerOrch,ConfModel,EvaluatorPanel,RecEngine secondary;
     class DBGraphs,EvidenceLEDG,DBConfidence,DBRec database;
-    class LLMGen,OllamaEmbed,LLMGenLoop llm;
+    class LLMGen,LLMGenLoop llm;
     class RunnerUI,ReportUI ui;
 ```
 
@@ -65,16 +64,13 @@ flowchart TD
 
 #### Phase 1: Ingestion & Baseline Graph Setup
 * **Document Parsing:** The frontend accepts a raw text paste or file upload for both the Job Description (JD) and Resume. The Go backend (`internal/documents`) parses the unstructured text via the configured LLM (local Ollama Gemma or Claude) to construct structured JSON definitions.
-* **Semantic Embedding:** Individual competencies and technical expectations are processed by the local Ollama Embedder using `nomic-embed-text` to generate high-dimensional vector representations.
 * **Graph Alignment:** The parsed capability lists are compared to compute baseline capability alignment graphs. Gaps, overlaps, and unknown skills are mapped and persisted in MongoDB (`capability_graphs`), which is used to initialize the interview round.
 
-#### Phase 2: The Adaptive Evidence Loop
-* **Dynamic Question Formulation:** When a turn starts, the orchestrator queries `capability_graphs` to find target expectations where current evidence is low or zero. It passes these gaps, along with the interview context, to the LLM to generate the next question.
-* **Multi-Lens Evidence Extraction:** The candidate submits an answer (either text or transcribed audio). The orchestrator routes the answer to the LLM (`internal/evidence`) to extract:
-  - **Positive / Negative Evidence:** Validations or failures of specific competencies.
-  - **Concept Vectors & Citations:** The technical concepts mentioned and precise supporting quotes.
-* **Confidence Rescoring:** The extracted points are written to `evidence_ledger`. The confidence engine (`internal/confidence`) processes the full ledger of all answers and updates the belief metrics (`cool`, `normal`, `hot`) for each competency in MongoDB (`confidence_scores`).
-* **Retroactive Score Adjustment:** As the interview progresses, later answers might clarify, elaborate, or correct concepts addressed in earlier turns. The orchestrator re-runs the belief analyzer over the entire historical ledger, updating previous scores dynamically.
+#### Phase 2: The Interview & Evidence Loop
+* **Upfront Question Generation:** When the interview starts, the orchestrator queries `capability_graphs` for target expectations where evidence is low or zero, and generates the full set of questions in a single batch (sized to the chosen duration), persisted to `questions` / `turns`.
+* **Answer Capture:** For each question the candidate submits an answer — typed, or recorded (audio transcribed via whisper.cpp when configured; otherwise a placeholder is stored). Each answer is recorded against its turn.
+* **Deferred Batch Evaluation:** Evaluation is deferred until the report is generated. At that point, for each answered turn, the orchestrator runs evidence extraction (`internal/evidence` — positive/negative evidence, concepts, and supporting quotes written to `evidence_ledger`), response analysis, and confidence rescoring (`internal/confidence`), updating the belief metrics (`cool`, `normal`, `hot`) per competency in `confidence_scores`.
+* **Retroactive Score Adjustment:** Because rescoring runs over the entire ledger at once, later answers can clarify, elaborate, or correct concepts from earlier turns — the belief analyzer revises those earlier scores accordingly.
 
 #### Phase 3: Final Report & Panel Evaluation
 * **Evaluator Personas Analysis:** When the interview concludes, the orchestrator compiles the full transaction history. It calls the virtual evaluator personas panel (`internal/evaluators`) to run independent assessments from the viewpoints of a **System Architect**, an **Engineering Manager**, and a **Product Manager**.
@@ -91,7 +87,7 @@ The platform consists of several orchestrating services and LLM agents:
 | **JD Ingestion** | `internal/documents` | Extracts competencies, technical expectations, and responsibilities from JDs. | MongoDB (`job_descriptions`) |
 | **Resume Ingestion** | `internal/documents` | Identifies name, technologies, and experience levels from resumes. | MongoDB (`candidate_profiles`) |
 | **Graph Generation** | `internal/capability` | Generates comparative charts matching profile to JD expectations. | MongoDB (`capability_graphs`) |
-| **Question Generation** | `internal/interview` | Formulates follow-up questions targeting low-confidence competencies. | MongoDB (`questions` / `turns`) |
+| **Question Generation** | `internal/interview` | Generates the full question set upfront from validation targets and low-confidence competencies. | MongoDB (`questions` / `turns`) |
 | **Evidence Extraction** | `internal/evidence` | Extracts positive/negative evidence, concepts, and quotes from answers. | MongoDB (`evidence_ledger`) |
 | **Confidence Recompute** | `internal/confidence` | Recomputes belief scores ensuring logical constraints (`cool >= normal >= hot`). | MongoDB (`confidence_scores`) |
 | **Evaluator Personas** | `internal/evaluators` | Generates assessments from virtual EM, Architect, and PM personas. | MongoDB (`recommendations`) |
@@ -105,7 +101,7 @@ The platform consists of several orchestrating services and LLM agents:
 * **Backend:** Go 1.26 (Standard library HTTP multiplexer, MongoDB driver)
 * **LLM Provider:** Ollama (default local backend) or Anthropic (opt-in API key)
 * **Models:**
-  * **Ollama (Local):** `gemma4:e4b` (generation) / `nomic-embed-text` (embeddings)
+  * **Ollama (Local):** `gemma4:e4b` (generation)
   * **Anthropic:** `claude-sonnet-4-6` (generation)
 * **Database:** MongoDB (document database)
 
@@ -115,10 +111,9 @@ The platform consists of several orchestrating services and LLM agents:
 * **Node 20+**
 * **MongoDB** (`mongod`) running on port `27017`
 * **Ollama** running locally on port `11434`
-  * Fetch models:
+  * Fetch the generation model:
     ```bash
     ollama pull gemma4:e4b
-    ollama pull nomic-embed-text
     ```
 
 ## Ports & Services
@@ -142,7 +137,6 @@ Config values are loaded from `config.json` in the backend root directory. Exclu
 | `LLM_BACKEND` | LLM generation backend (`"ollama"` or `"anthropic"`) | `"ollama"` | No |
 | `OLLAMA_HOST` | Local Ollama endpoint | `"http://localhost:11434"` | No |
 | `OLLAMA_MODEL` | Ollama model for generation | `"gemma4:e4b"` | No |
-| `OLLAMA_EMBED_MODEL`| Ollama model for embeddings | `"nomic-embed-text"` | No |
 | `OLLAMA_NUM_CTX` | Token context size limit | `16384` | No |
 | `ANTHROPIC_API_KEY` | Anthropic API key | `""` | Yes (if backend is `anthropic`) |
 | `ANTHROPIC_MODEL` | Anthropic model for generation | `"claude-sonnet-4-6"` | No |
@@ -185,7 +179,7 @@ go build -o bin/server ./cmd/server
 The server will bind to port `8080`. Verify health:
 ```bash
 curl -s http://localhost:8080/healthz
-# {"llm_backend":"ollama","llm_model":"gemma4:e2b","mongo":"ok","status":"ok"}
+# {"llm_backend":"ollama","llm_model":"gemma4:e4b","mongo":"ok","status":"ok"}
 ```
 
 ### 2. Start the Frontend UI
@@ -213,7 +207,7 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 | `/api/interviews/{id}/report` | `POST` | Kicks off asynchronous report generation (LLM assessment steps). |
 | `/api/interviews/{id}/report` | `GET` | Retrieves report generation progress status or the final completed report. |
 | `/api/interviews/{id}/transcript` | `POST` | Ingests manual audio transcripts for speech statistics. |
-| `/api/interviews/{id}/audio` | `POST` | Ingests audio files for speech transcription and analysis. |
+| `/api/interviews/{id}/audio` | `POST` | Ingests audio files; transcribes via whisper.cpp when configured, otherwise stores a placeholder transcript (use the transcript endpoint for real text). |
 | `/api/interviews/{id}/video-metadata` | `POST` | Ingests frame statistics for gaze/attention presence tracking. |
 | `/api/interviews/{id}/video` | `POST` | Ingests video files for frame presence and gaze analytics. |
 | `/api/candidates/{id}/trends` | `GET` / `POST` | Retrieves or calculates candidate competency growth trends across interviews. |
