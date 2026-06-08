@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -35,9 +36,14 @@ func CallJSON(ctx context.Context, c Caller, system, user string, out any) error
 }
 
 func parseInto(raw string, out any) error {
-	cleaned := ExtractJSON(raw)
+	cleaned, repaired := extractJSON(raw)
 	if cleaned == "" {
 		return fmt.Errorf("no JSON found in model response: %q", truncate(raw, 200))
+	}
+	if repaired {
+		// The model response was truncated (likely hit max_tokens) and was
+		// auto-closed to parse. The decoded value may be missing trailing data.
+		log.Printf("[LLM] warning: model JSON was truncated and auto-repaired; result may be incomplete")
 	}
 	cleaned = stripTrailingCommas(cleaned)
 	if err := json.Unmarshal([]byte(cleaned), out); err != nil {
@@ -87,6 +93,14 @@ func stripTrailingCommas(s string) string {
 // It also supports auto-repairing truncated JSON (e.g. from output length limits)
 // by tracking the nesting stack of open braces/brackets.
 func ExtractJSON(s string) string {
+	out, _ := extractJSON(s)
+	return out
+}
+
+// extractJSON is ExtractJSON's implementation; the second return value reports
+// whether the result was reconstructed from a truncated response (and may
+// therefore be missing trailing data) rather than parsed intact.
+func extractJSON(s string) (string, bool) {
 	s = strings.TrimSpace(s)
 
 	// Strip markdown code fences if present.
@@ -103,7 +117,7 @@ func ExtractJSON(s string) string {
 	// Find the outermost { } or [ ] span.
 	start := strings.IndexAny(s, "{[")
 	if start == -1 {
-		return ""
+		return "", false
 	}
 
 	depth := 0
@@ -134,7 +148,7 @@ func ExtractJSON(s string) string {
 				stack = stack[:len(stack)-1]
 			}
 			if depth == 0 {
-				return s[start : i+1]
+				return s[start : i+1], false
 			}
 		case ch == ']':
 			depth--
@@ -142,7 +156,7 @@ func ExtractJSON(s string) string {
 				stack = stack[:len(stack)-1]
 			}
 			if depth == 0 {
-				return s[start : i+1]
+				return s[start : i+1], false
 			}
 		}
 	}
@@ -163,10 +177,10 @@ func ExtractJSON(s string) string {
 		for j := len(stack) - 1; j >= 0; j-- {
 			sb.WriteByte(stack[j])
 		}
-		return sb.String()
+		return sb.String(), true
 	}
 
-	return ""
+	return "", false
 }
 
 // MarshalCompact renders v as compact JSON for embedding in a prompt. On error

@@ -14,76 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-const questionSystem = `You are a seasoned, adaptive technical interviewer. You generate ONE next question at a
-time. Rules:
-- Never ask generic textbook questions. Probe for validation of the specific gaps and
-  unknowns identified for THIS candidate and role.
-- Prioritize competencies with low confidence and high validation priority.
-- Use the conversation so far; build on prior answers, don't repeat ground already covered.
-- Match depth to the interview level and type, and to the time remaining.
-- Strictly calibrate the depth, hardness, and complexity of the question to match the target rigor/difficulty percentage:
-  * Low Rigor (0-20%%): Basic conceptual checks, syntax, simple behavioral recall.
-  * Medium Rigor (40-60%%): Standard technical screenings, standard optimizations, structured behavioral analysis.
-  * High Rigor (80-100%%): Bare-metal system design, low-level compilers/runtimes from scratch, deep socio-technical org restructuring scenarios (EM).
-- Ask a single, focused question.
-Respond with a single JSON object and no prose.`
-
-const questionUserTmpl = `Interview level: %s | type: %s | rigor/difficulty: %d%%
-This is question %d of approximately %d.
-
-Validation targets (highest priority first):
-%s
-
-Current confidence by competency (normal lens, 0..1; lower = needs validation):
-%s
-
-Conversation so far:
-%s
-
-Generate the next question as JSON:
-{ "question": string, "target_competencies": string[], "rationale": string }`
-
-type questionResult struct {
-	Question           string   `json:"question"`
-	TargetCompetencies []string `json:"target_competencies"`
-	Rationale          string   `json:"rationale"`
-}
-
-// generateQuestion creates, persists, and returns the next question turn.
-func (s *Service) generateQuestion(ctx context.Context, iv *domain.Interview, graphs *domain.CapabilityGraphSet, latest map[string]domain.ConfidenceSnapshot, turnNum int) (*domain.Turn, error) {
-	ts, err := s.turns(ctx, iv.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	user := fmt.Sprintf(questionUserTmpl,
-		iv.Level, iv.Type, iv.RigorPercent, turnNum, questionBudget(iv.DurationMin),
-		llm.MarshalCompact(graphs.ValidationTargets),
-		renderConfidenceGaps(latest),
-		buildMemory(ts),
-	)
-
-	var qr questionResult
-	if err := llm.CallJSON(ctx, s.LLM.Caller, questionSystem, user, &qr); err != nil {
-		return nil, fmt.Errorf("generate question: %w", err)
-	}
-
-	turn := domain.Turn{
-		InterviewID:        iv.ID,
-		Turn:               turnNum,
-		Kind:               domain.TurnQuestion,
-		Question:           strings.TrimSpace(qr.Question),
-		TargetCompetencies: qr.TargetCompetencies,
-		AskedAt:            time.Now().UTC(),
-	}
-	res, err := s.Store.Coll(store.CollQuestions).InsertOne(ctx, turn)
-	if err != nil {
-		return nil, fmt.Errorf("persist question: %w", err)
-	}
-	turn.ID = res.InsertedID.(bson.ObjectID)
-	return &turn, nil
-}
-
 // AnswerResult is returned after processing an answer.
 type AnswerResult struct {
 	Turn      *domain.Turn                `json:"turn"`
@@ -343,36 +273,6 @@ func openTurn(ts []domain.Turn) *domain.Turn {
 		}
 	}
 	return nil
-}
-
-func countAnswered(ts []domain.Turn) int {
-	n := 0
-	for _, t := range ts {
-		if t.Answered {
-			n++
-		}
-	}
-	return n
-}
-
-func renderConfidenceGaps(latest map[string]domain.ConfidenceSnapshot) string {
-	if len(latest) == 0 {
-		return "(no evidence yet)"
-	}
-	type kv struct {
-		comp  string
-		score float64
-	}
-	rows := make([]kv, 0, len(latest))
-	for c, s := range latest {
-		rows = append(rows, kv{c, s.Normal})
-	}
-	sort.Slice(rows, func(i, j int) bool { return rows[i].score < rows[j].score })
-	var b strings.Builder
-	for _, r := range rows {
-		fmt.Fprintf(&b, "- %s: %.2f\n", r.comp, r.score)
-	}
-	return strings.TrimSpace(b.String())
 }
 
 func normalize(s string) string {

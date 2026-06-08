@@ -19,37 +19,15 @@ type Caller interface {
 	ModelName() string
 }
 
-// Streamer produces a streaming response, invoking onToken for each chunk.
-type Streamer interface {
-	Stream(ctx context.Context, system, user string, onToken func(string) error) error
-	ModelName() string
-}
-
-// Embedder turns text into a vector embedding.
-type Embedder interface {
-	Embed(ctx context.Context, text string) ([]float32, error)
-	ModelName() string
-}
-
-// Provider bundles the three capabilities so dependents can take one dependency.
-// Embedding always uses Ollama (nomic-embed-text); generation/streaming follow
-// the configured backend.
+// Provider bundles the LLM capabilities dependents need behind one dependency.
 type Provider struct {
-	Caller   Caller
-	Streamer Streamer
-	Embedder Embedder
+	Caller Caller
 }
 
-// New builds a Provider from config. Generation defaults to the configured
-// backend ("ollama" or "anthropic"); embeddings always use local Ollama.
+// New builds a Provider from config. Generation uses the configured backend
+// ("ollama" or "anthropic").
 func New(cfg *config.Config) (*Provider, error) {
 	httpClient := &http.Client{Timeout: 15 * time.Minute}
-
-	embedder := &OllamaEmbedder{
-		BaseURL: cfg.OllamaHost,
-		Model:   cfg.OllamaEmbedModel,
-		Client:  httpClient,
-	}
 
 	switch cfg.LLMBackend {
 	case "ollama":
@@ -57,31 +35,21 @@ func New(cfg *config.Config) (*Provider, error) {
 			BaseURL:     cfg.OllamaHost,
 			Model:       cfg.OllamaModel,
 			MaxTokens:   cfg.MaxTokens,
-			Temperature: cfg.Temperature,
+			Temperature: *cfg.Temperature,
 			NumCtx:      cfg.OllamaNumCtx,
 			Client:      httpClient,
 		}
-		return &Provider{Caller: o, Streamer: o, Embedder: embedder}, nil
+		return &Provider{Caller: o}, nil
 
 	case "anthropic":
 		a := &AnthropicCaller{
 			APIKey:      cfg.AnthropicAPIKey,
 			Model:       cfg.AnthropicModel,
 			MaxTokens:   cfg.MaxTokens,
-			Temperature: cfg.Temperature,
+			Temperature: *cfg.Temperature,
 			Client:      httpClient,
 		}
-		// Anthropic streaming is added in a later phase; fall back to the
-		// Ollama streamer so live endpoints still function locally.
-		ollamaStreamer := &OllamaCaller{
-			BaseURL:     cfg.OllamaHost,
-			Model:       cfg.OllamaModel,
-			MaxTokens:   cfg.MaxTokens,
-			Temperature: cfg.Temperature,
-			NumCtx:      cfg.OllamaNumCtx,
-			Client:      httpClient,
-		}
-		return &Provider{Caller: a, Streamer: ollamaStreamer, Embedder: embedder}, nil
+		return &Provider{Caller: a}, nil
 
 	default:
 		return nil, fmt.Errorf("unknown LLM backend %q", cfg.LLMBackend)

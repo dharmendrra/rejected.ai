@@ -22,9 +22,6 @@ func (s *Store) EnsureIndexes(ctx context.Context) error {
 		CollQuestions: {
 			{Keys: bson.D{{Key: "interview_id", Value: 1}, {Key: "turn", Value: 1}}},
 		},
-		CollAnswers: {
-			{Keys: bson.D{{Key: "interview_id", Value: 1}, {Key: "turn", Value: 1}}},
-		},
 		CollEvidenceLedger: {
 			{Keys: bson.D{{Key: "interview_id", Value: 1}, {Key: "competency", Value: 1}}},
 			{Keys: bson.D{{Key: "interview_id", Value: 1}, {Key: "turn", Value: 1}}},

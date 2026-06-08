@@ -17,7 +17,6 @@ const (
 	CollCandidateProfile = "candidate_profiles"
 	CollInterviews       = "interviews"
 	CollQuestions        = "questions"
-	CollAnswers          = "answers"
 	CollTranscripts      = "transcripts"
 	CollVideoMetadata    = "video_metadata"
 	CollCapabilityGraphs = "capability_graphs"

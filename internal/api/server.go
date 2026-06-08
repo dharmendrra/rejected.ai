@@ -73,6 +73,12 @@ func NewServer(cfg *config.Config, st *store.Store, provider *llm.Provider) *Ser
 }
 
 // Routes builds the HTTP handler with all registered routes.
+//
+// Authentication: by design there is none. rejected.ai is a single-tenant tool
+// meant to run on localhost (or behind the operator's own network boundary), so
+// every route is open and GET /api/interviews returns all stored interviews,
+// including resume text. Do NOT expose this server to untrusted networks without
+// adding an auth layer first; the data includes candidate PII.
 func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
