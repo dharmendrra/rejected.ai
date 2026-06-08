@@ -89,3 +89,133 @@ button.ghost { background: transparent; color: var(--text); border: 1px solid va
 .between { justify-content: space-between; }
 .card { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
 .spin { color: var(--accent); }
+
+@keyframes spin360 {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin-timer {
+  display: inline-block;
+  animation: spin360 2s linear infinite;
+}
+
+/* Dropdown Menu CSS */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+.dropdown summary {
+  list-style: none;
+  cursor: pointer;
+}
+.dropdown summary::-webkit-details-marker {
+  display: none;
+}
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  padding: 8px 0;
+  min-width: 200px;
+  z-index: 1000;
+}
+.dropdown-item {
+  display: block;
+  padding: 8px 16px;
+  color: var(--text) !important;
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.dropdown-item:hover {
+  background: var(--panel-2);
+  text-decoration: none;
+  color: var(--accent) !important;
+}
+
+/* 🎥 Video/Audio Recording Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(11, 14, 20, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 16px;
+}
+
+.modal-content {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  padding: 24px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  position: relative;
+  text-align: center;
+}
+
+.video-container {
+  width: 280px;
+  height: 280px;
+  margin: 20px auto;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  background: #06090e;
+  position: relative;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+.video-element {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* mirror webcam for natural feel */
+}
+
+.recording-indicator {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #fff;
+  font-weight: 600;
+  z-index: 10;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.recording-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--bad);
+  border-radius: 50%;
+  animation: pulse-dot 1s infinite alternate;
+}
+
+@keyframes pulse-dot {
+  from { opacity: 0.3; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1.2); }
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+}
+

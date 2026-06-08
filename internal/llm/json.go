@@ -84,6 +84,8 @@ func stripTrailingCommas(s string) string {
 
 // ExtractJSON pulls a JSON value out of a model response, stripping ```json
 // fences and any leading/trailing prose. Returns "" if none is found.
+// It also supports auto-repairing truncated JSON (e.g. from output length limits)
+// by tracking the nesting stack of open braces/brackets.
 func ExtractJSON(s string) string {
 	s = strings.TrimSpace(s)
 
@@ -103,15 +105,12 @@ func ExtractJSON(s string) string {
 	if start == -1 {
 		return ""
 	}
-	open := s[start]
-	close := byte('}')
-	if open == '[' {
-		close = ']'
-	}
 
 	depth := 0
 	inStr := false
 	escaped := false
+	stack := []byte{} // to keep track of expected closing characters
+
 	for i := start; i < len(s); i++ {
 		ch := s[i]
 		switch {
@@ -123,15 +122,50 @@ func ExtractJSON(s string) string {
 			inStr = !inStr
 		case inStr:
 			// skip
-		case ch == open:
+		case ch == '{':
 			depth++
-		case ch == close:
+			stack = append(stack, '}')
+		case ch == '[':
+			depth++
+			stack = append(stack, ']')
+		case ch == '}':
 			depth--
+			if len(stack) > 0 && stack[len(stack)-1] == '}' {
+				stack = stack[:len(stack)-1]
+			}
+			if depth == 0 {
+				return s[start : i+1]
+			}
+		case ch == ']':
+			depth--
+			if len(stack) > 0 && stack[len(stack)-1] == ']' {
+				stack = stack[:len(stack)-1]
+			}
 			if depth == 0 {
 				return s[start : i+1]
 			}
 		}
 	}
+
+	// If the loop finished and depth > 0, the JSON was truncated.
+	// We can auto-repair it by closing quotes and popping brackets/braces.
+	if depth > 0 {
+		var sb strings.Builder
+		temp := s[start:]
+		// If it ended on an unfinished escape backslash, drop it so it doesn't escape our closing quote.
+		if len(temp) > 0 && temp[len(temp)-1] == '\\' {
+			temp = temp[:len(temp)-1]
+		}
+		sb.WriteString(temp)
+		if inStr {
+			sb.WriteByte('"')
+		}
+		for j := len(stack) - 1; j >= 0; j-- {
+			sb.WriteByte(stack[j])
+		}
+		return sb.String()
+	}
+
 	return ""
 }
 

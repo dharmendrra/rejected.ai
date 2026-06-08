@@ -150,14 +150,74 @@ also carries per-answer analysis:
 }
 ```
 
+## `GET /api/interviews`
+
+Lists all interviews for the History dashboard. Returns an array of summary objects (each
+hydrated with the linked résumé/JD and its turns so the dashboard can render a round without
+extra fetches):
+```json
+[
+  {
+    "id": "...",
+    "level": "Senior Engineer",
+    "type": "Mixed",
+    "status": "completed",                 // interview status
+    "report_status": "completed",          // "" if no report progress doc yet
+    "created_at": "...",
+    "updated_at": "...",
+    "candidate_name": "...",
+    "resume_id": "...", "resume_raw": "...", "resume_tech": ["..."],
+    "job_title": "...", "jd_id": "...", "jd_raw": "...",
+    "questions": [ { "turn": 1, "question": "...", "answer": "..." } ]
+  }
+]
+```
+
+## `DELETE /api/interviews/{id}`
+
+Cascade-deletes the interview session and its documents across the questions, transcripts,
+video-metadata, capability-graph, confidence-score, competency-score, evidence-ledger,
+signal, risk-area, recommendation, and ideal-response collections.
+```json
+{ "status": "deleted" }
+```
+
 ## `POST /api/interviews/{id}/report` (Phase 6–7)
 
 Generates the final assessment: finalizes competency scores, runs the evaluator persona
 panel, derives strongest signals and categorized risks, and produces the explainable
-recommendation. Makes several LLM calls (slow). Idempotent — re-running replaces prior
-report documents. `GET` the same path returns a previously generated report (404 if none).
+recommendation. Makes several LLM calls (slow).
 
-Response `200`:
+**Generation is asynchronous.** `POST` starts a background goroutine and returns
+immediately — it does **not** return the report. Idempotent: if a report already exists it
+returns it; if one is already `generating` it returns the in-flight progress; otherwise it
+clears prior failed/completed progress and starts fresh.
+
+Response `200` (generation started or already running):
+```json
+{
+  "status": "generating",
+  "progress": {
+    "id": "...",
+    "interview_id": "...",
+    "status": "generating",          // generating | completed | failed
+    "total_steps": 5,
+    "completed_steps": 2,
+    "current_step": "Scoring competencies",
+    "steps": [
+      { "name": "Finalizing scores", "status": "completed" },   // pending | running | completed
+      { "name": "Scoring competencies", "status": "running" }
+    ],
+    "error": ""                       // populated only when status == "failed"
+  }
+}
+```
+
+Poll `GET /api/interviews/{id}/report` until `.status` becomes `completed` (full report
+below) or `failed`. While generating, the `GET` returns the same record carrying `status`
+and `progress`; it `404`s only if generation has never been started.
+
+`GET` response `200` (completed):
 ```json
 {
   "interview": { "...": "..." },

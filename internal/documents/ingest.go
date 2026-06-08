@@ -3,6 +3,7 @@ package documents
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -26,6 +27,7 @@ func NewService(provider *llm.Provider, st *store.Store) *Service {
 const jdSystem = `You are an expert technical recruiter extracting structured data from a job description.
 Do not invent requirements that are not present. If a field has no content, return an empty array.
 Infer nothing about the candidate; only describe what the role asks for.
+Be extremely concise. Keep the output small by focusing only on the most critical requirements. Limit each array (like responsibilities, skills, expectations) to at most 3 items, and keep each item under 8 words.
 Respond with a single JSON object and no prose.`
 
 const jdUserTmpl = `Extract the following fields from this job description as JSON:
@@ -52,8 +54,20 @@ func (s *Service) IngestJD(ctx context.Context, raw string) (*domain.JobDescript
 		return nil, fmt.Errorf("job description text is empty")
 	}
 
+	// Check if already structured and saved in DB
+	var existing domain.JobDescription
+	err := s.Store.Coll(store.CollJobDescriptions).FindOne(ctx, bson.M{"raw": raw}).Decode(&existing)
+	if err == nil {
+		log.Printf("[INGEST] Reusing existing job description (ID: %s)", existing.ID.Hex())
+		return &existing, nil
+	}
+
 	var jd domain.JobDescription
-	if err := llm.CallJSON(ctx, s.LLM.Caller, jdSystem, fmt.Sprintf(jdUserTmpl, raw), &jd); err != nil {
+	llmInput := raw
+	if len(llmInput) > 3000 {
+		llmInput = llmInput[:3000] + "\n[truncated for length]"
+	}
+	if err := llm.CallJSON(ctx, s.LLM.Caller, jdSystem, fmt.Sprintf(jdUserTmpl, llmInput), &jd); err != nil {
 		return nil, fmt.Errorf("structure jd: %w", err)
 	}
 	jd.Raw = raw
@@ -70,6 +84,7 @@ func (s *Service) IngestJD(ctx context.Context, raw string) (*domain.JobDescript
 const resumeSystem = `You are an expert technical recruiter extracting structured data from a candidate resume.
 Extract only what the resume actually states. Do not invent or embellish.
 Each "*_evidence" array should contain concrete evidence phrases drawn from the resume.
+Be extremely concise. Keep the output small. Limit each evidence array to at most 2 key points, and keep each point under 8 words.
 Respond with a single JSON object and no prose.`
 
 const resumeUserTmpl = `Extract the following fields from this resume as JSON:
@@ -97,8 +112,20 @@ func (s *Service) IngestResume(ctx context.Context, raw string) (*domain.Candida
 		return nil, fmt.Errorf("resume text is empty")
 	}
 
+	// Check if already structured and saved in DB
+	var existing domain.CandidateProfile
+	err := s.Store.Coll(store.CollCandidateProfile).FindOne(ctx, bson.M{"raw": raw}).Decode(&existing)
+	if err == nil {
+		log.Printf("[INGEST] Reusing existing resume (ID: %s)", existing.ID.Hex())
+		return &existing, nil
+	}
+
 	var cp domain.CandidateProfile
-	if err := llm.CallJSON(ctx, s.LLM.Caller, resumeSystem, fmt.Sprintf(resumeUserTmpl, raw), &cp); err != nil {
+	llmInput := raw
+	if len(llmInput) > 3000 {
+		llmInput = llmInput[:3000] + "\n[truncated for length]"
+	}
+	if err := llm.CallJSON(ctx, s.LLM.Caller, resumeSystem, fmt.Sprintf(resumeUserTmpl, llmInput), &cp); err != nil {
 		return nil, fmt.Errorf("structure resume: %w", err)
 	}
 	cp.Raw = raw

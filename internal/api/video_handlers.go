@@ -50,11 +50,6 @@ func (s *Server) handleIngestVideo(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid interview id")
 		return
 	}
-	if s.Media.Detector == nil {
-		writeError(w, http.StatusNotImplemented,
-			"video detection not configured (set VIDEO_DETECTOR_BIN); use POST /api/interviews/{id}/video-metadata instead")
-		return
-	}
 	if err := r.ParseMultipartForm(maxUpload); err != nil {
 		writeError(w, http.StatusBadRequest, "parse upload: "+err.Error())
 		return

@@ -18,6 +18,7 @@ import (
 	"github.com/dharmendra/rejected.ai/internal/config"
 	"github.com/dharmendra/rejected.ai/internal/llm"
 	"github.com/dharmendra/rejected.ai/internal/store"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func main() {
@@ -45,6 +46,18 @@ func main() {
 		log.Fatalf("[BOOT] indexes: %v", err)
 	}
 	log.Printf("[BOOT] indexes ensured")
+
+	// Clean up any orphaned report progress documents from previous server processes.
+	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	_, _ = st.Coll(store.CollReportProgress).UpdateMany(cleanupCtx,
+		bson.D{{Key: "status", Value: "generating"}},
+		bson.D{{Key: "$set", Value: bson.D{
+			{Key: "status", Value: "failed"},
+			{Key: "error", Value: "Server restarted during generation"},
+			{Key: "updated_at", Value: time.Now().UTC()},
+		}}},
+	)
+	cleanupCancel()
 
 	provider, err := llm.New(cfg)
 	if err != nil {

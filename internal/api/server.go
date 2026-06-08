@@ -66,7 +66,7 @@ func NewServer(cfg *config.Config, st *store.Store, provider *llm.Provider) *Ser
 		LLM:       provider,
 		Documents: documents.NewService(provider, st),
 		Interview: interview.NewService(provider, st, cap, ev, conf, asm),
-		Report:    report.NewService(st, ev, conf, eval, sig, rk, rec),
+		Report:    report.NewService(st, ev, conf, eval, sig, rk, rec, provider),
 		Media:     media.NewService(st, transcriber, detector),
 		Learning:  learning.NewService(st),
 	}
@@ -85,6 +85,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/interviews", s.handleCreateInterview)
 	mux.HandleFunc("POST /api/interviews/{id}/answer", s.handleSubmitAnswer)
 	mux.HandleFunc("GET /api/interviews/{id}", s.handleGetInterview)
+	mux.HandleFunc("GET /api/interviews", s.handleListInterviews)
+	mux.HandleFunc("DELETE /api/interviews/{id}", s.handleDeleteInterview)
 
 	// Phase 7 — final report (generate / fetch cached).
 	mux.HandleFunc("POST /api/interviews/{id}/report", s.handleGenerateReport)

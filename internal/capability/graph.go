@@ -60,6 +60,16 @@ CANDIDATE (structured resume):
 // and interview type. The returned set has no InterviewID; the caller assigns
 // and persists it.
 func (s *Service) Build(ctx context.Context, level, iType string, jd *domain.JobDescription, cp *domain.CandidateProfile) (*domain.CapabilityGraphSet, error) {
+	// Temporarily clear Raw fields to avoid sending huge raw text blocks to the LLM prompt.
+	origJDRaw := jd.Raw
+	origCPRaw := cp.Raw
+	jd.Raw = ""
+	cp.Raw = ""
+	defer func() {
+		jd.Raw = origJDRaw
+		cp.Raw = origCPRaw
+	}()
+
 	jdJSON := llm.MarshalCompact(jd)
 	cpJSON := llm.MarshalCompact(cp)
 

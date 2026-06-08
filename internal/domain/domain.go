@@ -404,3 +404,58 @@ type HistoricalTrend struct {
 	Direction   string        `bson:"direction" json:"direction"`
 	CreatedAt   time.Time     `bson:"created_at" json:"created_at"`
 }
+
+// IdealResponse specifies what a candidate should have answered to achieve a >85% score.
+type IdealResponse struct {
+	Question     string   `bson:"question" json:"question"`
+	Competency   string   `bson:"competency" json:"competency"`
+	KeyPoints    []string `bson:"key_points" json:"key_points"`
+	SampleAnswer string   `bson:"sample_answer" json:"sample_answer"`
+}
+
+// IdealResponsesDoc is the persisted collection of ideal responses for an interview.
+type IdealResponsesDoc struct {
+	ID          bson.ObjectID   `bson:"_id,omitempty" json:"id"`
+	InterviewID bson.ObjectID   `bson:"interview_id" json:"interview_id"`
+	Responses   []IdealResponse `bson:"responses" json:"responses"`
+	CreatedAt   time.Time       `bson:"created_at" json:"created_at"`
+}
+
+// ReportStep represents one step in the report generation process.
+type ReportStep struct {
+	Name   string `bson:"name" json:"name"`
+	Status string `bson:"status" json:"status"` // "pending", "running", "completed"
+}
+
+// ReportProgress tracks the status of asynchronous report generation.
+type ReportProgress struct {
+	ID             bson.ObjectID `bson:"_id,omitempty" json:"id"`
+	InterviewID    bson.ObjectID `bson:"interview_id" json:"interview_id"`
+	Status         string        `bson:"status" json:"status"` // "generating", "completed", "failed"
+	TotalSteps     int           `bson:"total_steps" json:"total_steps"`
+	CompletedSteps int           `bson:"completed_steps" json:"completed_steps"`
+	CurrentStep    string        `bson:"current_step" json:"current_step"`
+	Steps          []ReportStep  `bson:"steps" json:"steps"`
+	Error          string        `bson:"error,omitempty" json:"error,omitempty"`
+	CreatedAt      time.Time     `bson:"created_at" json:"created_at"`
+	UpdatedAt      time.Time     `bson:"updated_at" json:"updated_at"`
+}
+
+// CoachingItem is an actionable feedback entry to help candidates improve.
+type CoachingItem struct {
+	Title         string   `bson:"title" json:"title"`
+	Category      string   `bson:"category" json:"category"` // "communication" | "study" | "what_if" | "contradiction" | "seniority" | "jd_match" | "presence"
+	Severity      string   `bson:"severity" json:"severity"` // "success" | "warning" | "info"
+	Description   string   `bson:"description" json:"description"`
+	TargetLevel   string   `bson:"target_level,omitempty" json:"target_level,omitempty"`
+	ObservedLevel string   `bson:"observed_level,omitempty" json:"observed_level,omitempty"`
+	ActionPoints  []string `bson:"action_points,omitempty" json:"action_points,omitempty"`
+}
+
+// CandidateCoaching represents the candidate growth guide.
+type CandidateCoaching struct {
+	ID          bson.ObjectID  `bson:"_id,omitempty" json:"id"`
+	InterviewID bson.ObjectID  `bson:"interview_id" json:"interview_id"`
+	Items       []CoachingItem `bson:"items" json:"items"`
+	CreatedAt   time.Time      `bson:"created_at" json:"created_at"`
+}

@@ -113,13 +113,25 @@ func (s *Service) CreateSession(ctx context.Context, req CreateRequest) (*Create
 	}
 	graphs.ID = gres.InsertedID.(bson.ObjectID)
 
-	// First question.
-	turn, err := s.generateQuestion(ctx, &iv, graphs, nil, 1)
+	// Generate all questions upfront.
+	turns, err := s.generateAllQuestions(ctx, &iv, graphs)
 	if err != nil {
 		return nil, err
 	}
 
-	return &CreateResult{Interview: &iv, Graphs: graphs, Question: turn}, nil
+	docs := make([]any, len(turns))
+	for i, t := range turns {
+		docs[i] = t
+	}
+	res2, err := s.Store.Coll(store.CollQuestions).InsertMany(ctx, docs)
+	if err != nil {
+		return nil, fmt.Errorf("persist questions: %w", err)
+	}
+	for i := range turns {
+		turns[i].ID = res2.InsertedIDs[i].(bson.ObjectID)
+	}
+
+	return &CreateResult{Interview: &iv, Graphs: graphs, Question: &turns[0]}, nil
 }
 
 // deriveCompetencies infers the competency set from the gap graph (validation

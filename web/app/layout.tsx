@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import Link from "next/link";
+import Header from "@/components/Header";
 
 export const metadata: Metadata = {
   title: "rejected.ai — Interview Intelligence",
@@ -9,15 +9,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body>
-        <div className="container">
-          <div className="header">
-            <Link href="/" className="brand" style={{ color: "var(--text)" }}>
-              rejected<span className="dim">.ai</span>
-            </Link>
-            <span className="note">evidence-accumulating interview intelligence</span>
-          </div>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>
+        <div className="container" style={{ position: "relative" }}>
+          <Header />
           {children}
         </div>
       </body>

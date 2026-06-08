@@ -81,6 +81,9 @@ func TestReportPipeline(t *testing.T) {
 		`{"risks":[{"competency":"security","category":"missing","severity":"high","reason":"never discussed","evidence_turns":[]},{"competency":"leadership","category":"weak","severity":"medium","reason":"thin evidence","evidence_turns":[2]}]}`,
 		// 4) recommendation
 		`{"decision":"hire_with_risks","confidence_level":0.72,"reasoning":"strong reliability, security unproven","citations":[{"competency":"idempotency","turns":[1,4],"note":"retroactively validated"}]}`,
+		// 5) ideal responses (skipped — no answered turns in the test seeding)
+		// 5) coaching items
+		`{"coaching_items":[{"title":"Study Idempotency Patterns","category":"study","severity":"warning","description":"Deepen understanding of exactly-once semantics.","action_points":["Read about idempotent consumer pattern"]}]}`,
 	}}
 	provider := &llm.Provider{Caller: mock}
 
@@ -88,7 +91,7 @@ func TestReportPipeline(t *testing.T) {
 	conf := confidence.NewService(provider, st, ev)
 	svc := NewService(st, ev, conf,
 		evaluators.NewService(provider), signals.NewService(provider),
-		risk.NewService(provider), recommendation.NewService(provider))
+		risk.NewService(provider), recommendation.NewService(provider), provider)
 
 	rep, err := svc.Generate(ctx, ivID)
 	if err != nil {
@@ -119,8 +122,8 @@ func TestReportPipeline(t *testing.T) {
 	if len(rep.Recommendation.Personas) != 1 {
 		t.Errorf("personas embedded = %d, want 1", len(rep.Recommendation.Personas))
 	}
-	if mock.i != 4 {
-		t.Errorf("expected exactly 4 LLM calls, got %d", mock.i)
+	if mock.i != 5 {
+		t.Errorf("expected exactly 5 LLM calls, got %d", mock.i)
 	}
 
 	// Everything persisted and reloadable.

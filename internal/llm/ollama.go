@@ -21,6 +21,7 @@ type OllamaCaller struct {
 	Model       string
 	MaxTokens   int
 	Temperature float64
+	NumCtx      int
 	Client      *http.Client
 }
 
@@ -40,9 +41,14 @@ type ollamaGenerateChunk struct {
 }
 
 func (o *OllamaCaller) options() map[string]any {
+	numCtx := o.NumCtx
+	if numCtx <= 0 {
+		numCtx = 16384
+	}
 	return map[string]any{
 		"num_predict": o.MaxTokens,
 		"temperature": o.Temperature,
+		"num_ctx":     numCtx,
 	}
 }
 

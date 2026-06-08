@@ -4,8 +4,15 @@ Local-first, AI-native interview intelligence platform. Evaluates engineering
 candidates through conversation and **accumulating evidence** rather than keyword
 matching. The defining behavior is the evidence loop:
 
-```
-Question → Evidence → Confidence Update → New Evidence → Confidence Update → Retroactive Re-scoring
+```mermaid
+flowchart LR
+    Q([Question]) --> E[Evidence]
+    E --> C[Confidence recompute]
+    C -->|next turn| Q
+    C -. retroactive re-scoring .-> E
+    C -->|sufficient| R[["Cited report"]]
+    classDef core fill:#dcfce7,stroke:#16a34a,color:#0f172a;
+    class C core;
 ```
 
 Scores are never frozen — a later answer that reveals deeper understanding lifts the
@@ -48,25 +55,32 @@ the evidence ledger.
 
 ## Data flow (target, Phases 1–7)
 
-```
-JD + Resume ──ingest──► structured profiles ──graphs──► validation targets
-                                                              │
-                                            ┌─────────────────┘
-                                            ▼
-   ┌──────────── interview session loop (per turn) ───────────────┐
-   │ question ─► answer ─► evidence extraction ─► evidence ledger  │
-   │                                   │                           │
-   │                                   ▼                           │
-   │            confidence recompute over ENTIRE ledger            │
-   │            (retroactive re-scoring is structural)             │
-   │                                   │                           │
-   │              per-turn confidence snapshot (replay)            │
-   │                                   │                           │
-   │     sufficient? ──no──► follow-up question  ──yes──► next     │
-   └───────────────────────────────────────────────────────────────┘
-                                            │
-                                            ▼
-              signals + risk areas + recommendation (cited evidence)
+```mermaid
+flowchart TD
+    JD[/"JD + Resume"/] --> P["Structured profiles"]
+    P --> G["Capability graphs<br/>candidate · target · gap"]
+    G --> VT["Validation targets"]
+    VT --> Q
+
+    subgraph loop["Interview session loop · per turn"]
+        direction TB
+        Q["Question"] --> A["Answer"]
+        A --> EX["Evidence extraction<br/>concept-linked"]
+        EX --> L[("Evidence ledger")]
+        L --> C["Confidence recompute<br/>over the ENTIRE ledger"]
+        C -. "retroactive re-scoring<br/>(structural)" .-> L
+        C --> SNAP[("Per-turn snapshot<br/>· replay")]
+        C -->|"sufficient? no"| Q
+    end
+
+    C -->|"sufficient? yes"| R["Signals · risk areas · recommendation<br/>(cited evidence)"]
+
+    classDef store fill:#fef9c3,stroke:#ca8a04,color:#0f172a;
+    classDef core fill:#dcfce7,stroke:#16a34a,color:#0f172a;
+    classDef io fill:#dbeafe,stroke:#2563eb,color:#0f172a;
+    class L,SNAP store;
+    class C core;
+    class JD,R io;
 ```
 
 ## MongoDB collections

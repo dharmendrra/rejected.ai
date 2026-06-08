@@ -39,6 +39,7 @@ export interface Interview {
   duration_min: number;
   status: string;
   competencies: string[];
+  created_at: string;
 }
 
 export interface Turn {
@@ -106,6 +107,10 @@ export interface InterviewView {
   turns: Turn[];
   evidence: EvidenceItem[];
   confidence: ConfidenceSnapshot[];
+  candidate_name: string;
+  job_title: string;
+  jd_raw: string;
+  completed_at?: string;
 }
 
 export interface CompetencyScore {
@@ -148,20 +153,64 @@ export interface Recommendation {
   personas: PersonaView[];
 }
 
+export interface IdealResponse {
+  question: string;
+  competency: string;
+  key_points: string[];
+  sample_answer: string;
+}
+
+export interface CoachingItem {
+  title: string;
+  category: string;
+  severity: string;
+  description: string;
+  target_level?: string;
+  observed_level?: string;
+  action_points?: string[];
+}
+
+export interface ReportStep {
+  name: string;
+  status: string;
+}
+
+export interface ReportProgress {
+  id: string;
+  interview_id: string;
+  status: string;
+  total_steps: number;
+  completed_steps: number;
+  current_step: string;
+  steps: ReportStep[];
+  error?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Report {
   interview: Interview;
   competency_scores: CompetencyScore[];
   signals: StrongestSignal[];
   risks: RiskItem[];
   recommendation: Recommendation | null;
+  ideal_responses?: IdealResponse[];
+  coaching_items?: CoachingItem[];
+  status?: string;
+  progress?: ReportProgress;
 }
 
 // ─── Calls ───────────────────────────────────────────────────────────────────
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
+  const isFormData = init?.body instanceof FormData;
+  const headers = { ...(init?.headers || {}) } as Record<string, string>;
+  if (!isFormData && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
   const res = await fetch(`${BASE}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
+    headers,
   });
   if (!res.ok) {
     let msg = `${res.status} ${res.statusText}`;
@@ -179,8 +228,14 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   ingestJD: (raw: string) =>
     req<JobDescription>("/api/job-descriptions", { method: "POST", body: JSON.stringify({ raw }) }),
-  ingestResume: (raw: string) =>
-    req<CandidateProfile>("/api/resumes", { method: "POST", body: JSON.stringify({ raw }) }),
+  ingestResume: (rawOrFile: string | File) => {
+    if (rawOrFile instanceof File) {
+      const fd = new FormData();
+      fd.append("file", rawOrFile);
+      return req<CandidateProfile>("/api/resumes", { method: "POST", body: fd });
+    }
+    return req<CandidateProfile>("/api/resumes", { method: "POST", body: JSON.stringify({ raw: rawOrFile }) });
+  },
   createInterview: (body: {
     job_description_id: string;
     candidate_profile_id: string;
@@ -190,7 +245,24 @@ export const api = {
   }) => req<CreateResult>("/api/interviews", { method: "POST", body: JSON.stringify(body) }),
   submitAnswer: (id: string, answer: string) =>
     req<AnswerResult>(`/api/interviews/${id}/answer`, { method: "POST", body: JSON.stringify({ answer }) }),
+  uploadAudio: (id: string, turn: number, file: Blob, durationSec: number, latencyMs: number) => {
+    const fd = new FormData();
+    fd.append("file", file, "audio.webm");
+    fd.append("turn", String(turn));
+    fd.append("duration_sec", String(durationSec));
+    fd.append("latency_ms", String(latencyMs));
+    return req<any>(`/api/interviews/${id}/audio`, { method: "POST", body: fd });
+  },
+  uploadVideo: (id: string, turn: number, file: Blob, latencyMs: number) => {
+    const fd = new FormData();
+    fd.append("file", file, "video.webm");
+    fd.append("turn", String(turn));
+    fd.append("latency_ms", String(latencyMs));
+    return req<any>(`/api/interviews/${id}/video`, { method: "POST", body: fd });
+  },
   getInterview: (id: string) => req<InterviewView>(`/api/interviews/${id}`),
   generateReport: (id: string) => req<Report>(`/api/interviews/${id}/report`, { method: "POST" }),
   getReport: (id: string) => req<Report>(`/api/interviews/${id}/report`),
+  listInterviews: () => req<any[]>("/api/interviews"),
+  deleteInterview: (id: string) => req<{ status: string }>(`/api/interviews/${id}`, { method: "DELETE" }),
 };

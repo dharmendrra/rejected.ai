@@ -51,11 +51,6 @@ func (s *Server) handleIngestAudio(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid interview id")
 		return
 	}
-	if s.Media.Transcriber == nil {
-		writeError(w, http.StatusNotImplemented,
-			"audio transcription not configured (set WHISPER_BIN + WHISPER_MODEL); use POST /api/interviews/{id}/transcript instead")
-		return
-	}
 	if err := r.ParseMultipartForm(maxUpload); err != nil {
 		writeError(w, http.StatusBadRequest, "parse upload: "+err.Error())
 		return

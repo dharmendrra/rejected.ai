@@ -16,6 +16,7 @@ func TestExtractJSON(t *testing.T) {
 		{"nested", `{"a":{"b":[1,2]},"c":3}`, `{"a":{"b":[1,2]},"c":3}`},
 		{"brace in string", `{"a":"}"}`, `{"a":"}"}`},
 		{"none", `no json here`, ``},
+		{"truncated", `{"name": "DHARMENDRA", "experience": ["Brevo", "Sendin`, `{"name": "DHARMENDRA", "experience": ["Brevo", "Sendin"]}`},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

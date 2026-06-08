@@ -29,6 +29,7 @@ type Config struct {
 
 	MaxTokens   int     `json:"MAX_TOKENS"`
 	Temperature float64 `json:"TEMPERATURE"`
+	OllamaNumCtx int     `json:"OLLAMA_NUM_CTX"`
 
 	// Audio (Phase 9). When both are set, audio uploads are transcribed via a
 	// whisper.cpp CLI; otherwise callers supply transcripts directly.
@@ -91,6 +92,9 @@ func (c *Config) applyDefaults() {
 	}
 	if c.Temperature == 0 {
 		c.Temperature = 0.4
+	}
+	if c.OllamaNumCtx == 0 {
+		c.OllamaNumCtx = 16384
 	}
 }
 

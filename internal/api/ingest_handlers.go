@@ -13,7 +13,7 @@ import (
 
 // llmTimeout bounds a request that makes one or more (possibly slow, local) LLM
 // calls. Generous because gemma on Ollama can take many seconds per call.
-const llmTimeout = 10 * time.Minute
+const llmTimeout = 60 * time.Minute
 
 // dbTimeout bounds a request that only touches MongoDB (no LLM), such as
 // computing cross-interview trends.

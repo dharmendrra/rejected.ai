@@ -1,146 +1,281 @@
 # rejected.ai
 
-Local-first, AI-native **interview intelligence** platform. It evaluates engineering
-candidates through conversation and **accumulating evidence** rather than keyword
-matching. The defining behavior is the evidence loop:
+Local-first, AI-native **interview intelligence** platform. It evaluates engineering candidates through conversation, multi-lens evaluation personas, and **accumulating evidence** rather than simple keyword matching.
+
+## Overview
+
+rejected.ai automates the technical assessment process by translating raw job descriptions and resumes into rich capability graphs. It runs an adaptive interview evidence loop, prompting candidates and collecting structured evidence. After every answer, the platform recomputes candidate competency scores over the full evidence ledger. Finally, a panel of virtual evaluator personas generates a fully cited hiring recommendation report.
+
+## How It Works
+
+The system manages the candidate assessment journey through three primary architectural phases:
 
 ```mermaid
-flowchart LR
-    Q([Question]) --> E[Evidence]
-    E --> C[Confidence recompute]
-    C -->|next turn| Q
-    C -. retroactive re-scoring .-> E
-    C -->|sufficient| R[["Cited report"]]
-    classDef core fill:#dcfce7,stroke:#16a34a,color:#0f172a;
-    class C core;
+flowchart TD
+    %% Subgraph 1: Ingestion Pipeline
+    subgraph Phase1["① Ingestion & Baseline Setup"]
+        direction LR
+        JD["Job Description<br>(Raw Text / Paste)"] --> IngestService["Ingestion Service<br>(Backend server :8080)"]
+        CV["Candidate Resume<br>(Raw Text / Upload)"] --> IngestService
+        IngestService -->|structure & parse| LLMGen["Ollama / Claude<br>(Gemma / Sonnet)"]
+        IngestService -->|embed capabilities| OllamaEmbed["Ollama Embedder<br>(nomic-embed-text)"]
+        IngestService -->|upsert baseline graphs| DBGraphs[("MongoDB Store<br>(capability_graphs)")]
+    end
+
+    %% Subgraph 2: Interview Evidence Loop
+    subgraph Phase2["② Interview Evidence Loop"]
+        direction TB
+        GraphsQuery["Query low confidence Gaps"] --> ServerOrch["Server Orchestrator<br>(:8080)"]
+        ServerOrch -->|generate question| LLMGenLoop["Ollama / Claude<br>(Gemma / Sonnet)"]
+        LLMGenLoop -->|next question| RunnerUI["Frontend Runner UI<br>(Next.js Page)"]
+        RunnerUI -->|submit answer| ServerOrch
+        ServerOrch -->|extract points| EvidenceLEDG[("MongoDB Ledger<br>(evidence_ledger)")]
+        ServerOrch -->|recompute belief scores| ConfModel["Confidence Engine<br>(cool / normal / hot)"]
+        ConfModel -->|update confidence| DBConfidence[("MongoDB Store<br>(confidence_scores)")]
+    end
+
+    %% Subgraph 3: Final Report Evaluation
+    subgraph Phase3["③ Report Evaluation Persona Panel"]
+        direction TB
+        LedgerExtract["Compile evidence Ledger"] --> EvaluatorPanel["Virtual Evaluator Panel<br>(EM, Architect, PM Personas)"]
+        EvaluatorPanel -->|evaluate strengths & risks| RecEngine["Recommendation Engine"]
+        RecEngine -->|persist cited report| DBRec[("MongoDB Store<br>(recommendations)")]
+        DBRec -->|render dashboard tabs| ReportUI["Frontend Report UI<br>(Hiring & Coaching)"]
+    end
+
+    %% Sequential Phase Connectors (Ensures perfect alignment of the subgraphs)
+    Phase1 --> Phase2
+    Phase2 --> Phase3
+
+    %% Styling
+    classDef primary fill:#fef08a,stroke:#eab308,color:#0f172a,stroke-width:2px;
+    classDef secondary fill:#dbeafe,stroke:#3b82f6,color:#0f172a,stroke-width:2px;
+    classDef database fill:#fae8ff,stroke:#d946ef,color:#0f172a,stroke-width:2px;
+    classDef llm fill:#dcfce7,stroke:#22c55e,color:#0f172a,stroke-width:2px;
+    classDef ui fill:#f1f5f9,stroke:#64748b,color:#0f172a,stroke-width:2px;
+
+    class JD,CV primary;
+    class IngestService,ServerOrch,ConfModel,EvaluatorPanel,RecEngine secondary;
+    class DBGraphs,EvidenceLEDG,DBConfidence,DBRec database;
+    class LLMGen,OllamaEmbed,LLMGenLoop llm;
+    class RunnerUI,ReportUI ui;
 ```
 
-Scores are never frozen — a later answer that reveals deeper understanding lifts the
-confidence attributed to earlier shorthand answers, and every score is explainable via
-the evidence ledger.
+### Detailed Data Flow
 
-<p align="center">
-  <img src="docs/diagrams/architecture.png" alt="rejected.ai data flow — a setup pipeline (JD + résumé → capability graphs → first question) feeding an interview evidence loop that recomputes confidence over the entire ledger and emits a cited hiring report" width="860">
-</p>
+#### Phase 1: Ingestion & Baseline Graph Setup
+* **Document Parsing:** The frontend accepts a raw text paste or file upload for both the Job Description (JD) and Resume. The Go backend (`internal/documents`) parses the unstructured text via the configured LLM (local Ollama Gemma or Claude) to construct structured JSON definitions.
+* **Semantic Embedding:** Individual competencies and technical expectations are processed by the local Ollama Embedder using `nomic-embed-text` to generate high-dimensional vector representations.
+* **Graph Alignment:** The parsed capability lists are compared to compute baseline capability alignment graphs. Gaps, overlaps, and unknown skills are mapped and persisted in MongoDB (`capability_graphs`), which is used to initialize the interview round.
 
-## Quick Start
+#### Phase 2: The Adaptive Evidence Loop
+* **Dynamic Question Formulation:** When a turn starts, the orchestrator queries `capability_graphs` to find target expectations where current evidence is low or zero. It passes these gaps, along with the interview context, to the LLM to generate the next question.
+* **Multi-Lens Evidence Extraction:** The candidate submits an answer (either text or transcribed audio). The orchestrator routes the answer to the LLM (`internal/evidence`) to extract:
+  - **Positive / Negative Evidence:** Validations or failures of specific competencies.
+  - **Concept Vectors & Citations:** The technical concepts mentioned and precise supporting quotes.
+* **Confidence Rescoring:** The extracted points are written to `evidence_ledger`. The confidence engine (`internal/confidence`) processes the full ledger of all answers and updates the belief metrics (`cool`, `normal`, `hot`) for each competency in MongoDB (`confidence_scores`).
+* **Retroactive Score Adjustment:** As the interview progresses, later answers might clarify, elaborate, or correct concepts addressed in earlier turns. The orchestrator re-runs the belief analyzer over the entire historical ledger, updating previous scores dynamically.
 
-### Prerequisites
-- **Go 1.26+**
-- **MongoDB** (`mongod`) running on `:27017`
-- **Ollama** serving the configured models (local, default backend):
-  - `ollama pull gemma4:e4b` (generation) and `ollama pull nomic-embed-text` (embeddings)
-- For the UI: **Node 20+**
-- For the demo script below: **jq**
+#### Phase 3: Final Report & Panel Evaluation
+* **Evaluator Personas Analysis:** When the interview concludes, the orchestrator compiles the full transaction history. It calls the virtual evaluator personas panel (`internal/evaluators`) to run independent assessments from the viewpoints of a **System Architect**, an **Engineering Manager**, and a **Product Manager**.
+* **Signals & Risks Synthesis:** The signals service (`internal/signals`) identifies strongest positive signal highlights, while the risk engine (`internal/risk`) checks for architectural contradictions (e.g. inconsistent database choices between questions) or severe skill gaps.
+* **Recommendation Persistence:** The recommendation engine combines the persona reports, risks, and signals to produce a final hiring recommendation (*Strong Hire*, *Hire*, *Hire with Risks*, *Borderline*, or *No Hire*) with an overall confidence score dial.
+* **Coaching Generation:** Lastly, a personalized coaching guide is compiled detailing growth action plans, study paths, and seniority gap comparisons (Mentioned vs. Observed seniority badges).
 
-> On a CPU-only machine the local model is slow (minutes per LLM call). The backend,
-> tests, and non-LLM endpoints (audio/video/trends) are unaffected.
+## Capabilities / Tools
 
-### Run the backend
+The platform consists of several orchestrating services and LLM agents:
+
+| Tool / Core Function | Package / Path | Description | Touches / Modifies |
+|---|---|---|---|
+| **JD Ingestion** | `internal/documents` | Extracts competencies, technical expectations, and responsibilities from JDs. | MongoDB (`job_descriptions`) |
+| **Resume Ingestion** | `internal/documents` | Identifies name, technologies, and experience levels from resumes. | MongoDB (`candidate_profiles`) |
+| **Graph Generation** | `internal/capability` | Generates comparative charts matching profile to JD expectations. | MongoDB (`capability_graphs`) |
+| **Question Generation** | `internal/interview` | Formulates follow-up questions targeting low-confidence competencies. | MongoDB (`questions` / `turns`) |
+| **Evidence Extraction** | `internal/evidence` | Extracts positive/negative evidence, concepts, and quotes from answers. | MongoDB (`evidence_ledger`) |
+| **Confidence Recompute** | `internal/confidence` | Recomputes belief scores ensuring logical constraints (`cool >= normal >= hot`). | MongoDB (`confidence_scores`) |
+| **Evaluator Personas** | `internal/evaluators` | Generates assessments from virtual EM, Architect, and PM personas. | MongoDB (`recommendations`) |
+| **Strongest Signals** | `internal/signals` | Pinpoints positive candidate highlights from the evidence ledger. | MongoDB (`recommendations`) |
+| **Risk Assessment** | `internal/risk` | Identifies architectural contradictions, gaps, and missing requirements. | MongoDB (`recommendations`) |
+| **Hiring Decision** | `internal/recommendation` | Renders a final hire decision (*Strong Hire* to *No Hire*) with citations. | MongoDB (`recommendations`) |
+
+## Tech Stack
+
+* **Frontend:** React / Next.js (TypeScript, App Router, Vanilla CSS, SVG circular dials)
+* **Backend:** Go 1.26 (Standard library HTTP multiplexer, MongoDB driver)
+* **LLM Provider:** Ollama (default local backend) or Anthropic (opt-in API key)
+* **Models:**
+  * **Ollama (Local):** `gemma4:e4b` (generation) / `nomic-embed-text` (embeddings)
+  * **Anthropic:** `claude-sonnet-4-6` (generation)
+* **Database:** MongoDB (document database)
+
+## Prerequisites
+
+* **Go 1.26+**
+* **Node 20+**
+* **MongoDB** (`mongod`) running on port `27017`
+* **Ollama** running locally on port `11434`
+  * Fetch models:
+    ```bash
+    ollama pull gemma4:e4b
+    ollama pull nomic-embed-text
+    ```
+
+## Ports & Services
+
+| Port | Service | Description |
+|---|---|---|
+| `8080` | Go Backend Server | REST API orchestration, database queries, and LLM calls. |
+| `3000` | Next.js Frontend UI | Dashboard application for running interviews and viewing reports. |
+| `27017` | MongoDB | Primary document database. |
+| `11434` | Ollama | Local LLM inference server. |
+
+## Configuration
+
+Config values are loaded from `config.json` in the backend root directory. Exclude comments and maintain valid JSON.
+
+| Key | Description | Default Value | Required? |
+|---|---|---|---|
+| `SERVER_ADDR` | Bind address for Go server | `":8080"` | No |
+| `MONGO_URI` | MongoDB Connection URI | `"mongodb://localhost:27017"` | No |
+| `MONGO_DB` | MongoDB Database name | `"rejected_ai"` | No |
+| `LLM_BACKEND` | LLM generation backend (`"ollama"` or `"anthropic"`) | `"ollama"` | No |
+| `OLLAMA_HOST` | Local Ollama endpoint | `"http://localhost:11434"` | No |
+| `OLLAMA_MODEL` | Ollama model for generation | `"gemma4:e4b"` | No |
+| `OLLAMA_EMBED_MODEL`| Ollama model for embeddings | `"nomic-embed-text"` | No |
+| `OLLAMA_NUM_CTX` | Token context size limit | `16384` | No |
+| `ANTHROPIC_API_KEY` | Anthropic API key | `""` | Yes (if backend is `anthropic`) |
+| `ANTHROPIC_MODEL` | Anthropic model for generation | `"claude-sonnet-4-6"` | No |
+| `MAX_TOKENS` | Max generation tokens | `4096` | No |
+| `TEMPERATURE` | LLM generation temperature | `0.4` | No |
+| `WHISPER_BIN` | Path to `whisper.cpp` CLI binary | `""` | No (fallback to manual transcript) |
+| `WHISPER_MODEL` | Path to Whisper model file | `""` | No |
+| `VIDEO_DETECTOR_BIN`| Path to external video metrics CLI | `""` | No (fallback to metadata upload) |
+
+## Installation
+
+### Backend Setup
+1. Clone the repository and navigate to the directory:
+   ```bash
+   cd rejected.ai
+   ```
+2. Copy configuration example:
+   ```bash
+   cp config.example.json config.json
+   ```
+
+### Frontend Setup
+1. Navigate to the web folder and install dependencies:
+   ```bash
+   cd web
+   ```
+2. Install Node packages:
+   ```bash
+   npm install
+   ```
+
+## Running Locally
+
+### 1. Start the Go Backend
+Ensure MongoDB and Ollama are running, then execute:
 ```bash
-cp config.example.json config.json          # already present in this repo
 go build -o bin/server ./cmd/server
-./bin/server                                 # serves :8080, CORS open for the UI
-
-curl -s localhost:8080/healthz
-# {"llm_backend":"ollama","llm_model":"gemma4:e4b","mongo":"ok","status":"ok"}
+./bin/server
+```
+The server will bind to port `8080`. Verify health:
+```bash
+curl -s http://localhost:8080/healthz
+# {"llm_backend":"ollama","llm_model":"gemma4:e2b","mongo":"ok","status":"ok"}
 ```
 
-Prefer Anthropic over local Ollama? Set `"LLM_BACKEND": "anthropic"` and
-`"ANTHROPIC_API_KEY"` in `config.json`.
+### 2. Start the Frontend UI
+In a separate terminal:
+```bash
+cd web
+npm run dev
+```
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
-### Fastest path: the seed demo
-End-to-end run — ingests a sample JD + resume, starts an interview, answers each
-question, then prints the confidence-evolution timeline and any **retroactive**
-evidence revisions:
+*Note: The first run will prompt you to paste a Job Description and Candidate Resume. You can load sample data using the "Load Sample" button on the home screen.*
+
+## Core API Route Registry
+
+| Route | Method | Description |
+|---|---|---|
+| `/healthz` | `GET` | Health check (reports MongoDB status and LLM provider config). |
+| `/api/job-descriptions` | `POST` | Ingests raw job description text to create structured targets. |
+| `/api/resumes` | `POST` | Ingests candidate resume text to create structured profile capabilities. |
+| `/api/interviews` | `POST` | Initializes an interview session (builds capability graphs and gets Q1). |
+| `/api/interviews` | `GET` | Lists all past interview rounds. |
+| `/api/interviews/{id}` | `GET` | Retrieves full interview details (questions, turns, transcripts, evidence). |
+| `/api/interviews/{id}` | `DELETE` | Cascades delete for an interview and all related database records. |
+| `/api/interviews/{id}/answer` | `POST` | Submits candidate's answer for the current question and returns the next turn. |
+| `/api/interviews/{id}/report` | `POST` | Kicks off asynchronous report generation (LLM assessment steps). |
+| `/api/interviews/{id}/report` | `GET` | Retrieves report generation progress status or the final completed report. |
+| `/api/interviews/{id}/transcript` | `POST` | Ingests manual audio transcripts for speech statistics. |
+| `/api/interviews/{id}/audio` | `POST` | Ingests audio files for speech transcription and analysis. |
+| `/api/interviews/{id}/video-metadata` | `POST` | Ingests frame statistics for gaze/attention presence tracking. |
+| `/api/interviews/{id}/video` | `POST` | Ingests video files for frame presence and gaze analytics. |
+| `/api/candidates/{id}/trends` | `GET` / `POST` | Retrieves or calculates candidate competency growth trends across interviews. |
+
+## Usage Example
+
+1. **Ingest Job Description and Resume:** Pasting aPayments Engineer JD and candidate resume creates the profile.
+2. **Start Interview:** Click "Start interview". The system generates Question 1: *"Explain how you design a payments ingestion pipeline for idempotency."*
+3. **Submit Answer:** Candidate submits answer: *"I use PostgreSQL unique keys to prevent duplicate transactions."*
+4. **Evidence Analysis:** The background LLM extracts evidence:
+   - *Positive:* Validated Distributed Systems knowledge (uses unique keys).
+   - *Next Question:* System generates Question 2 on message safety and queues.
+5. **Get Report:** The completed round outputs a hiring recommendation (e.g. *Hire with Risks*, citing the specific turns and evaluating competencies).
+
+## Project Structure
+
+```
+rejected.ai/
+├── cmd/                          # Entry points
+│   ├── check_db/                 # Database validation script
+│   ├── insert_dummy/             # Mock data insertion tool
+│   └── server/                   # Main Go web server
+├── internal/                     # Domain modules (Go)
+│   ├── api/                      # REST endpoints & middleware
+│   ├── assumptions/              # Candidate assumptions processor
+│   ├── capability/               # Capability graph builders
+│   ├── confidence/               # Competency rescoring logic
+│   ├── config/                   # Config loader & validations
+│   ├── documents/                # JD & Resume parser services
+│   ├── evaluators/               # Persona-based panel reviews
+│   ├── evidence/                 # Evidence ledger analyzer
+│   ├── interview/                # Session and turn managers
+│   ├── learning/                 # Cross-interview trend tracking
+│   ├── llm/                      # Ollama & Anthropic client interfaces
+│   ├── media/                    # Audio/Video metadata metrics
+│   ├── recommendation/           # Final recommendation engine
+│   ├── risk/                     # Gaps and risk analyzers
+│   ├── signals/                  # Key technical highlights
+│   └── store/                    # Database client store
+├── notes/                        # Specification and format docs
+├── scripts/                      # Testing & local run scripts
+├── web/                          # Next.js UI Frontend
+│   ├── app/                      # App router layout & pages
+│   ├── components/               # Gauges, bars, and dials
+│   └── lib/                      # API client interface typescript types
+├── README.md                     # Platform documentation
+├── config.example.json           # Template configuration file
+└── go.mod                        # Go module specifications
+```
+
+## Testing / Evaluation
+
+Run the complete backend test suite:
+```bash
+go test ./...
+```
+To run an end-to-end simulated CLI pipeline that generates mock data, evaluates turns, and prints retroactive evidence rescoring:
 ```bash
 ./scripts/seed_demo.sh
 ```
 
-### Manual flow (curl)
-```bash
-BASE=http://localhost:8080
+## Cost & Rate Limits
 
-# 1. Ingest a JD and a resume (paste raw text, or upload a file via multipart "file").
-JD_ID=$(curl -sf -X POST $BASE/api/job-descriptions \
-  -H 'Content-Type: application/json' \
-  -d "{\"raw\": $(jq -Rs . < scripts/sample_jd.txt)}" | jq -r .id)
-CV_ID=$(curl -sf -X POST $BASE/api/resumes \
-  -H 'Content-Type: application/json' \
-  -d "{\"raw\": $(jq -Rs . < scripts/sample_resume.txt)}" | jq -r .id)
-
-# 2. Start an interview (builds capability graphs, asks the first question).
-IV_ID=$(curl -sf -X POST $BASE/api/interviews \
-  -H 'Content-Type: application/json' \
-  -d "{\"job_description_id\":\"$JD_ID\",\"candidate_profile_id\":\"$CV_ID\",\"level\":\"Senior Engineer\",\"type\":\"Mixed\",\"duration_min\":20}" \
-  | jq -r .interview.id)
-
-# 3. Answer turns (repeat; the response carries the next question until completed).
-curl -sf -X POST $BASE/api/interviews/$IV_ID/answer \
-  -H 'Content-Type: application/json' -d '{"answer":"For idempotency I derived a dedup key..."}'
-
-# 4. Generate the final hiring-intelligence report.
-curl -sf -X POST $BASE/api/interviews/$IV_ID/report | jq .
-
-# 5. Full interview record (turns, evidence ledger, confidence snapshots, transcripts, video).
-curl -sf $BASE/api/interviews/$IV_ID | jq .
-```
-
-### Optional signals & learning
-```bash
-# Audio (Phase 9): supply a transcript for measurable speech signals (WPM, fillers, latency).
-curl -sf -X POST $BASE/api/interviews/$IV_ID/transcript \
-  -H 'Content-Type: application/json' \
-  -d '{"turn":1,"transcript":"Um, so I used a dedup key...","duration_sec":5,"latency_ms":1200}'
-
-# Video (Phase 10): supply per-frame metrics for measurable engagement/attention/participation.
-curl -sf -X POST $BASE/api/interviews/$IV_ID/video-metadata \
-  -H 'Content-Type: application/json' \
-  -d '{"turn":1,"metrics":{"frames_analyzed":1800,"frames_face_present":1710,"frames_gaze_on_screen":1520,"on_camera_sec":60,"duration_sec":62}}'
-
-# Cross-interview learning (Phase 11): a candidate's competency trends across interviews.
-curl -sf -X POST $BASE/api/candidates/$CV_ID/trends | jq .
-```
-Both audio and video also accept raw uploads (`/audio`, `/video`) when a transcription
-engine (`WHISPER_BIN`/`WHISPER_MODEL`) or video detector (`VIDEO_DETECTOR_BIN`) is
-configured; otherwise they return `501` pointing at the metrics endpoints above.
-
-### Frontend (Next.js UI)
-```bash
-cd web
-npm install
-npm run dev          # http://localhost:3000  (reads NEXT_PUBLIC_API_BASE)
-```
-Flow: paste JD + resume on **Home** → answer questions on **Interview** (live confidence
-sidebar) → generate the **Report** dashboard (recommendation + citations, cool/normal/hot
-competency breakdown, strongest signals, risk areas, evaluator panel, score-evolution
-sparklines, and the retroactive re-scoring log).
-
-### Tests
-```bash
-go build ./... && go vet ./... && go test ./...
-```
-
-## Design principles
-
-- **Evidence over keywords.** Every score traces to specific answer turns; later answers
-  retroactively re-weight earlier evidence.
-- **Measurable, never inferred.** Audio and video signals are counts/percentages/durations
-  only — the platform deliberately never infers honesty, intelligence, or personality.
-- **Deterministic where it can be.** Cross-interview trends are pure arithmetic over stored
-  scores — no LLM, fully explainable.
-- **Local-first.** Defaults to Ollama + local MongoDB; Anthropic is opt-in.
-
-## Documentation
-
-Design notes and API/format specs live in [`notes/`](notes/):
-
-| Doc | Contents |
-|---|---|
-| [ARCHITECTURE.md](notes/ARCHITECTURE.md) | Stack, package layout, data flow, collections |
-| [RUNNING.md](notes/RUNNING.md) | Detailed local-run guide (backend, UI, tests) |
-| [API_FORMAT.md](notes/API_FORMAT.md) | Every endpoint's request/response shape |
-| [VIDEO_METADATA_FORMAT.md](notes/VIDEO_METADATA_FORMAT.md) | Phase 10 video signals + detector contract |
-| [TRENDS_FORMAT.md](notes/TRENDS_FORMAT.md) | Phase 11 cross-interview trends |
-
-> The `docs/` folder is reserved for the GitHub Pages site.
+* **Ollama Backend (Local):** 100% free and runs entirely locally. There are no API costs or rate limits.
+* **Anthropic Backend:** Standard token-based rates apply for calls to `claude-sonnet-4-6`. Ensure your usage complies with Anthropic's tier-based rate limits.

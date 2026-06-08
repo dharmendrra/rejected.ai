@@ -43,7 +43,7 @@ type Provider struct {
 // New builds a Provider from config. Generation defaults to the configured
 // backend ("ollama" or "anthropic"); embeddings always use local Ollama.
 func New(cfg *config.Config) (*Provider, error) {
-	httpClient := &http.Client{Timeout: 5 * time.Minute}
+	httpClient := &http.Client{Timeout: 15 * time.Minute}
 
 	embedder := &OllamaEmbedder{
 		BaseURL: cfg.OllamaHost,
@@ -58,6 +58,7 @@ func New(cfg *config.Config) (*Provider, error) {
 			Model:       cfg.OllamaModel,
 			MaxTokens:   cfg.MaxTokens,
 			Temperature: cfg.Temperature,
+			NumCtx:      cfg.OllamaNumCtx,
 			Client:      httpClient,
 		}
 		return &Provider{Caller: o, Streamer: o, Embedder: embedder}, nil
@@ -77,6 +78,7 @@ func New(cfg *config.Config) (*Provider, error) {
 			Model:       cfg.OllamaModel,
 			MaxTokens:   cfg.MaxTokens,
 			Temperature: cfg.Temperature,
+			NumCtx:      cfg.OllamaNumCtx,
 			Client:      httpClient,
 		}
 		return &Provider{Caller: a, Streamer: ollamaStreamer, Embedder: embedder}, nil

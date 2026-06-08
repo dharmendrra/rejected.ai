@@ -135,14 +135,15 @@ func (s *Service) Rescore(ctx context.Context, iv *domain.Interview, turn *domai
 	docs := make([]any, 0, len(res.Competencies))
 	for _, c := range res.Competencies {
 		turns := dedupeInts(c.EvidenceTurns)
+		cool, normal, hot := enforceLensLogic(c.Cool, c.Normal, c.Hot)
 		snap := domain.ConfidenceSnapshot{
 			InterviewID:   iv.ID,
 			Competency:    c.Name,
 			Turn:          turn.Turn,
 			Confidence:    clamp01(c.Confidence),
-			Cool:          clamp01(c.Cool),
-			Normal:        clamp01(c.Normal),
-			Hot:           clamp01(c.Hot),
+			Cool:          cool,
+			Normal:        normal,
+			Hot:           hot,
 			EvidenceCount: countForCompetency(ledger, c.Name),
 			EvidenceTurns: turns,
 			Rationale:     c.Rationale,
@@ -224,4 +225,18 @@ func clamp01(v float64) float64 {
 		return 1
 	}
 	return v
+}
+
+func enforceLensLogic(cool, normal, hot float64) (float64, float64, float64) {
+	c := clamp01(cool)
+	n := clamp01(normal)
+	h := clamp01(hot)
+
+	if c < n {
+		c = n
+	}
+	if h > n {
+		h = n
+	}
+	return c, n, h
 }

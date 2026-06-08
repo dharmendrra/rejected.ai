@@ -6,6 +6,7 @@ package assumptions
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/dharmendra/rejected.ai/internal/domain"
@@ -27,6 +28,47 @@ type Analysis struct {
 	Assumptions  []string `json:"assumptions"`
 	ResponseType string   `json:"response_type"`
 	Reasoning    string   `json:"reasoning"`
+}
+
+// UnmarshalJSON implements a custom json.Unmarshaler to robustly handle cases
+// where the LLM might wrap assumptions inside nested arrays (e.g. [["a", "b"]]).
+func (a *Analysis) UnmarshalJSON(data []byte) error {
+	type Alias Analysis
+	aux := struct {
+		Assumptions any `json:"assumptions"`
+		*Alias
+	}{
+		Alias: (*Alias)(a),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	if aux.Assumptions == nil {
+		a.Assumptions = nil
+		return nil
+	}
+
+	switch val := aux.Assumptions.(type) {
+	case []any:
+		var assumptions []string
+		for _, item := range val {
+			switch subVal := item.(type) {
+			case string:
+				assumptions = append(assumptions, subVal)
+			case []any:
+				for _, subSubVal := range subVal {
+					if str, ok := subSubVal.(string); ok {
+						assumptions = append(assumptions, str)
+					}
+				}
+			}
+		}
+		a.Assumptions = assumptions
+	case string:
+		a.Assumptions = []string{val}
+	}
+	return nil
 }
 
 const analyzeSystem = `You analyze a single interview answer. Two jobs:

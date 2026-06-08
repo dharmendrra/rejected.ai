@@ -56,6 +56,12 @@ func (s *Store) EnsureIndexes(ctx context.Context) error {
 		CollHistoricalTrends: {
 			{Keys: bson.D{{Key: "candidate_id", Value: 1}, {Key: "competency", Value: 1}}},
 		},
+		CollIdealResponses: {
+			{Keys: bson.D{{Key: "interview_id", Value: 1}}},
+		},
+		CollReportProgress: {
+			{Keys: bson.D{{Key: "interview_id", Value: 1}}},
+		},
 	}
 
 	for coll, models := range specs {
