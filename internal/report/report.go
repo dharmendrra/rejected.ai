@@ -7,6 +7,7 @@ package report
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -186,7 +187,7 @@ func (s *Service) Generate(ctx context.Context, interviewID bson.ObjectID, onSte
 	} else {
 		idealRes, err = s.generateIdealResponses(ctx, &iv, answeredTurns)
 		if err != nil {
-			fmt.Printf("Error generating ideal responses: %v\n", err)
+			log.Printf("[REPORT] ideal responses generation failed (section omitted): %v", err)
 		} else if len(idealRes) > 0 {
 			_, _ = s.Store.Coll(store.CollIdealResponses).DeleteMany(ctx, bson.D{{Key: "interview_id", Value: interviewID}})
 			if _, err := s.Store.Coll(store.CollIdealResponses).InsertOne(ctx, domain.IdealResponsesDoc{InterviewID: interviewID, Responses: idealRes, CreatedAt: time.Now().UTC()}); err != nil {
@@ -206,7 +207,7 @@ func (s *Service) Generate(ctx context.Context, interviewID bson.ObjectID, onSte
 	} else {
 		coachingItems, err = s.generateCoachingItems(ctx, &iv, scores, ledger)
 		if err != nil {
-			fmt.Printf("Error generating coaching guide: %v\n", err)
+			log.Printf("[REPORT] coaching guide generation failed (section omitted): %v", err)
 		} else if len(coachingItems) > 0 {
 			_, _ = s.Store.Coll(store.CollCandidateCoaching).DeleteMany(ctx, bson.D{{Key: "interview_id", Value: interviewID}})
 			if _, err := s.Store.Coll(store.CollCandidateCoaching).InsertOne(ctx, domain.CandidateCoaching{

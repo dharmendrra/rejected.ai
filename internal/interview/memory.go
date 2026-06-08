@@ -42,25 +42,3 @@ func buildMemory(ts []domain.Turn) string {
 	}
 	return strings.TrimSpace(b.String())
 }
-
-// latestConfidence returns the most recent confidence snapshot per competency,
-// used to identify confidence gaps when generating the next question.
-func (s *Service) latestConfidence(ctx context.Context, interviewID bson.ObjectID) (map[string]domain.ConfidenceSnapshot, error) {
-	cur, err := s.Store.Coll(store.CollConfidenceScores).Find(ctx,
-		bson.D{{Key: "interview_id", Value: interviewID}},
-		options.Find().SetSort(bson.D{{Key: "turn", Value: 1}}),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("find confidence: %w", err)
-	}
-	var snaps []domain.ConfidenceSnapshot
-	if err := cur.All(ctx, &snaps); err != nil {
-		return nil, fmt.Errorf("decode confidence: %w", err)
-	}
-	latest := map[string]domain.ConfidenceSnapshot{}
-	for _, s := range snaps {
-		// snaps are turn-ascending, so the last write per competency wins.
-		latest[s.Competency] = s
-	}
-	return latest, nil
-}

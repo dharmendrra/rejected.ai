@@ -101,6 +101,12 @@ func (s *Server) handleGenerateReport(w http.ResponseWriter, r *http.Request) {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 		defer cancel()
 
+		// Work on private copies so the HTTP response written below can read the
+		// original progress/steps without racing this goroutine.
+		steps := append([]domain.ReportStep(nil), steps...)
+		progress := progress
+		progress.Steps = steps
+
 		setStepStatus := func(stepName string, status string) {
 			foundCurrent := false
 			for idx := range steps {

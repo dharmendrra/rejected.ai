@@ -20,16 +20,17 @@ type Config struct {
 	// LLMBackend selects the default generation/evaluation backend: "ollama" or "anthropic".
 	LLMBackend string `json:"LLM_BACKEND"`
 
-	OllamaHost       string `json:"OLLAMA_HOST"`
-	OllamaModel      string `json:"OLLAMA_MODEL"`
-	OllamaEmbedModel string `json:"OLLAMA_EMBED_MODEL"`
+	OllamaHost  string `json:"OLLAMA_HOST"`
+	OllamaModel string `json:"OLLAMA_MODEL"`
 
 	AnthropicAPIKey string `json:"ANTHROPIC_API_KEY"`
 	AnthropicModel  string `json:"ANTHROPIC_MODEL"`
 
-	MaxTokens   int     `json:"MAX_TOKENS"`
-	Temperature float64 `json:"TEMPERATURE"`
-	OllamaNumCtx int     `json:"OLLAMA_NUM_CTX"`
+	MaxTokens int `json:"MAX_TOKENS"`
+	// Temperature is a pointer so an explicitly configured 0 (deterministic
+	// decoding) is distinguishable from "unset"; applyDefaults fills it in.
+	Temperature  *float64 `json:"TEMPERATURE"`
+	OllamaNumCtx int      `json:"OLLAMA_NUM_CTX"`
 
 	// Audio (Phase 9). When both are set, audio uploads are transcribed via a
 	// whisper.cpp CLI; otherwise callers supply transcripts directly.
@@ -81,17 +82,15 @@ func (c *Config) applyDefaults() {
 	if c.OllamaModel == "" {
 		c.OllamaModel = "gemma4:e4b"
 	}
-	if c.OllamaEmbedModel == "" {
-		c.OllamaEmbedModel = "nomic-embed-text"
-	}
 	if c.AnthropicModel == "" {
 		c.AnthropicModel = "claude-sonnet-4-6"
 	}
 	if c.MaxTokens == 0 {
 		c.MaxTokens = 4096
 	}
-	if c.Temperature == 0 {
-		c.Temperature = 0.4
+	if c.Temperature == nil {
+		def := 0.4
+		c.Temperature = &def
 	}
 	if c.OllamaNumCtx == 0 {
 		c.OllamaNumCtx = 16384

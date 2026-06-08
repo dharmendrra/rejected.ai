@@ -149,54 +149,95 @@ func (s *Server) handleListInterviews(w http.ResponseWriter, r *http.Request) {
 	}
 	defer cur.Close(ctx)
 
-	var list []map[string]any
-	for cur.Next(ctx) {
-		var iv domain.Interview
-		if err := cur.Decode(&iv); err != nil {
-			continue
-		}
-
-		var cp domain.CandidateProfile
-		_ = s.Store.Coll(store.CollCandidateProfile).FindOne(ctx, bson.D{{Key: "_id", Value: iv.CandidateProfileID}}).Decode(&cp)
-
-		var jd domain.JobDescription
-		_ = s.Store.Coll(store.CollJobDescriptions).FindOne(ctx, bson.D{{Key: "_id", Value: iv.JobDescriptionID}}).Decode(&jd)
-
-		var turns []domain.Turn
-		curTurns, err := s.Store.Coll(store.CollQuestions).Find(ctx, bson.D{{Key: "interview_id", Value: iv.ID}}, options.Find().SetSort(bson.D{{Key: "turn", Value: 1}}))
-		if err == nil {
-			_ = curTurns.All(ctx, &turns)
-		}
-
-		var progress domain.ReportProgress
-		var reportStatus string
-		if err := s.Store.Coll(store.CollReportProgress).FindOne(ctx, bson.D{{Key: "interview_id", Value: iv.ID}}).Decode(&progress); err == nil {
-			reportStatus = progress.Status
-		}
-
-		item := map[string]any{
-			"id":                 iv.ID.Hex(),
-			"level":              iv.Level,
-			"type":               iv.Type,
-			"status":             iv.Status,
-			"report_status":      reportStatus,
-			"created_at":         iv.CreatedAt,
-			"updated_at":         iv.UpdatedAt,
-			"candidate_name":     cp.Name,
-			"resume_id":          cp.ID.Hex(),
-			"resume_raw":         cp.Raw,
-			"resume_tech":        cp.Technologies,
-			"job_title":          jd.Title,
-			"jd_id":              jd.ID.Hex(),
-			"jd_raw":             jd.Raw,
-			"questions":          turns,
-		}
-		list = append(list, item)
+	var interviews []domain.Interview
+	if err := cur.All(ctx, &interviews); err != nil {
+		writeError(w, http.StatusInternalServerError, "decode interviews: "+err.Error())
+		return
+	}
+	if len(interviews) == 0 {
+		writeJSON(w, http.StatusOK, []map[string]any{})
+		return
 	}
 
-	if list == nil {
-		list = []map[string]any{}
+	// Collect related IDs so the lookups below can be batched into one query
+	// each, rather than issuing per-interview reads (avoids N+1).
+	candidateIDs := make([]bson.ObjectID, 0, len(interviews))
+	jdIDs := make([]bson.ObjectID, 0, len(interviews))
+	interviewIDs := make([]bson.ObjectID, 0, len(interviews))
+	for _, iv := range interviews {
+		candidateIDs = append(candidateIDs, iv.CandidateProfileID)
+		jdIDs = append(jdIDs, iv.JobDescriptionID)
+		interviewIDs = append(interviewIDs, iv.ID)
 	}
+
+	candidates := map[bson.ObjectID]domain.CandidateProfile{}
+	if c, err := s.Store.Coll(store.CollCandidateProfile).Find(ctx, bson.D{{Key: "_id", Value: bson.D{{Key: "$in", Value: candidateIDs}}}}); err == nil {
+		var cps []domain.CandidateProfile
+		_ = c.All(ctx, &cps)
+		for _, cp := range cps {
+			candidates[cp.ID] = cp
+		}
+	}
+
+	jds := map[bson.ObjectID]domain.JobDescription{}
+	if c, err := s.Store.Coll(store.CollJobDescriptions).Find(ctx, bson.D{{Key: "_id", Value: bson.D{{Key: "$in", Value: jdIDs}}}}); err == nil {
+		var jdList []domain.JobDescription
+		_ = c.All(ctx, &jdList)
+		for _, jd := range jdList {
+			jds[jd.ID] = jd
+		}
+	}
+
+	// Questions for all interviews in one query, grouped by interview_id in turn order.
+	questionsByInterview := map[bson.ObjectID][]domain.Turn{}
+	if c, err := s.Store.Coll(store.CollQuestions).Find(ctx,
+		bson.D{{Key: "interview_id", Value: bson.D{{Key: "$in", Value: interviewIDs}}}},
+		options.Find().SetSort(bson.D{{Key: "interview_id", Value: 1}, {Key: "turn", Value: 1}}),
+	); err == nil {
+		var allTurns []domain.Turn
+		_ = c.All(ctx, &allTurns)
+		for _, t := range allTurns {
+			questionsByInterview[t.InterviewID] = append(questionsByInterview[t.InterviewID], t)
+		}
+	}
+
+	reportStatusByInterview := map[bson.ObjectID]string{}
+	if c, err := s.Store.Coll(store.CollReportProgress).Find(ctx, bson.D{{Key: "interview_id", Value: bson.D{{Key: "$in", Value: interviewIDs}}}}); err == nil {
+		var progresses []domain.ReportProgress
+		_ = c.All(ctx, &progresses)
+		for _, p := range progresses {
+			reportStatusByInterview[p.InterviewID] = p.Status
+		}
+	}
+
+	list := make([]map[string]any, 0, len(interviews))
+	for _, iv := range interviews {
+		cp := candidates[iv.CandidateProfileID]
+		jd := jds[iv.JobDescriptionID]
+		turns := questionsByInterview[iv.ID]
+		if turns == nil {
+			turns = []domain.Turn{}
+		}
+
+		list = append(list, map[string]any{
+			"id":             iv.ID.Hex(),
+			"level":          iv.Level,
+			"type":           iv.Type,
+			"status":         iv.Status,
+			"report_status":  reportStatusByInterview[iv.ID],
+			"created_at":     iv.CreatedAt,
+			"updated_at":     iv.UpdatedAt,
+			"candidate_name": cp.Name,
+			"resume_id":      cp.ID.Hex(),
+			"resume_raw":     cp.Raw,
+			"resume_tech":    cp.Technologies,
+			"job_title":      jd.Title,
+			"jd_id":          jd.ID.Hex(),
+			"jd_raw":         jd.Raw,
+			"questions":      turns,
+		})
+	}
+
 	writeJSON(w, http.StatusOK, list)
 }
 
@@ -221,6 +262,8 @@ func (s *Server) handleDeleteInterview(w http.ResponseWriter, r *http.Request) {
 		store.CollRiskAreas,
 		store.CollRecommendations,
 		store.CollIdealResponses,
+		store.CollReportProgress,
+		store.CollCandidateCoaching,
 	}
 
 	for _, coll := range collections {
