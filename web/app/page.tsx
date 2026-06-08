@@ -155,7 +155,7 @@ export default function Home() {
           <div>
             <label>Type</label>
             <select value={type} onChange={(e) => setType(e.target.value)}>
-              {["Mixed", "Technical Screening", "System Design", "Architecture Review", "Engineering Leadership", "AI Engineering"].map(
+              {["Mixed", "Technical Screening", "System Design", "Architecture Review", "Engineering Leadership", "AI Engineering", "HR Round"].map(
                 (t) => (
                   <option key={t}>{t}</option>
                 )
