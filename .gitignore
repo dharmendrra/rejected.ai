@@ -18,5 +18,8 @@ web/out/
 /data/uploads/
 /data/media/
 
+# Generated screenshots (capture via web/scripts/shots*.mjs)
+/screenshots/
+
 # LLM audit logs (enable via LLM_LOG_LEVEL)
 /logs/
