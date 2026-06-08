@@ -23,3 +23,9 @@ web/out/
 
 # LLM audit logs (enable via LLM_LOG_LEVEL)
 /logs/
+
+# Local-only working docs (video briefs, review notes — not versioned)
+/notebook-video.md
+/notebook-video-60s.md
+/notebook-video-jobseeker.md
+/CODE_REVIEW.md
