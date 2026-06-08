@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, type Dashboard } from "@/lib/api";
@@ -28,6 +28,17 @@ const DIRECTION_META: Record<TrendDirection, { label: string; color: string; ico
   new: { label: "new", color: "var(--accent)", icon: "✦" },
 };
 
+// Shared styling for the header filter controls (scope / period / date inputs).
+const ctrlStyle: CSSProperties = {
+  background: "var(--panel-2)",
+  color: "var(--text)",
+  border: "1px solid var(--border)",
+  borderRadius: 8,
+  padding: "8px 10px",
+  font: "inherit",
+  fontSize: 13,
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const [data, setData] = useState<Dashboard | null>(null);
@@ -40,13 +51,38 @@ export default function DashboardPage() {
   const [candidateNames, setCandidateNames] = useState<string[]>([]);
   const [selectedEvolution, setSelectedEvolution] = useState<string>("");
 
+  // Date filter: "all" | "month" | "year" | "range".
+  const [period, setPeriod] = useState<"all" | "month" | "year" | "range">("all");
+  const [monthVal, setMonthVal] = useState<string>(""); // YYYY-MM
+  const [yearVal, setYearVal] = useState<string>(""); // YYYY
+  const [fromVal, setFromVal] = useState<string>(""); // YYYY-MM-DD
+  const [toVal, setToVal] = useState<string>(""); // YYYY-MM-DD
+
+  // Resolve the selected period to RFC3339 from/to bounds for the API.
+  const { from, to } = useMemo<{ from?: string; to?: string }>(() => {
+    const startOf = (d: string) => (d ? new Date(`${d}T00:00:00`).toISOString() : undefined);
+    const endOf = (d: string) => (d ? new Date(`${d}T23:59:59.999`).toISOString() : undefined);
+    if (period === "month" && /^\d{4}-\d{2}$/.test(monthVal)) {
+      const [y, m] = monthVal.split("-").map(Number);
+      const last = new Date(y, m, 0).getDate(); // last day of month
+      return { from: startOf(`${monthVal}-01`), to: endOf(`${monthVal}-${String(last).padStart(2, "0")}`) };
+    }
+    if (period === "year" && /^\d{4}$/.test(yearVal)) {
+      return { from: startOf(`${yearVal}-01-01`), to: endOf(`${yearVal}-12-31`) };
+    }
+    if (period === "range") {
+      return { from: startOf(fromVal), to: endOf(toVal) };
+    }
+    return {};
+  }, [period, monthVal, yearVal, fromVal, toVal]);
+
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       setLoading(true);
       setError(null);
       try {
-        const d = await api.getDashboard({ candidate });
+        const d = await api.getDashboard({ candidate, from, to });
         if (cancelled) return;
         setData(d);
         setUsingSample(false);
@@ -65,17 +101,17 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [candidate]);
+  }, [candidate, from, to]);
 
-  // Capture the full distinct-name list from whatever the first successful load
-  // returned (only when viewing "all" so we see everyone).
+  // Capture the full distinct-name list from an unscoped, unfiltered load so the
+  // dropdown keeps everyone even after scoping or date-filtering.
   useEffect(() => {
-    if (!data || candidate !== "all") return;
+    if (!data || candidate !== "all" || period !== "all") return;
     const names = Array.from(
       new Set(data.confidence_over_time.map((p) => p.candidate_name).filter((n): n is string => !!n))
     ).sort();
     setCandidateNames(names);
-  }, [data, candidate]);
+  }, [data, candidate, period]);
 
   // Default the evolution selector to the first available interview.
   useEffect(() => {
@@ -152,7 +188,7 @@ export default function DashboardPage() {
             {data.kpis.candidates > 0 && ` · ${data.kpis.candidates} candidate${data.kpis.candidates === 1 ? "" : "s"}`}
           </p>
         </div>
-        <div className="flex" style={{ gap: 8, alignItems: "center" }}>
+        <div className="flex" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <label style={{ margin: 0, fontSize: 12 }} htmlFor="scope-candidate">
             Scope
           </label>
@@ -160,15 +196,7 @@ export default function DashboardPage() {
             id="scope-candidate"
             value={candidate}
             onChange={(e) => setCandidate(e.target.value)}
-            style={{
-              background: "var(--panel-2)",
-              color: "var(--text)",
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              padding: "8px 10px",
-              font: "inherit",
-              fontSize: 13,
-            }}
+            style={ctrlStyle}
           >
             <option value="all">All candidates</option>
             {candidateNames.map((n) => (
@@ -177,6 +205,62 @@ export default function DashboardPage() {
               </option>
             ))}
           </select>
+
+          <label style={{ margin: "0 0 0 8px", fontSize: 12 }} htmlFor="scope-period">
+            Period
+          </label>
+          <select
+            id="scope-period"
+            value={period}
+            onChange={(e) => setPeriod(e.target.value as typeof period)}
+            style={ctrlStyle}
+          >
+            <option value="all">All time</option>
+            <option value="month">Month</option>
+            <option value="year">Year</option>
+            <option value="range">Custom range</option>
+          </select>
+
+          {period === "month" && (
+            <input
+              type="month"
+              aria-label="Month"
+              value={monthVal}
+              onChange={(e) => setMonthVal(e.target.value)}
+              style={ctrlStyle}
+            />
+          )}
+          {period === "year" && (
+            <input
+              type="number"
+              aria-label="Year"
+              placeholder="YYYY"
+              min={2000}
+              max={2100}
+              value={yearVal}
+              onChange={(e) => setYearVal(e.target.value)}
+              style={{ ...ctrlStyle, width: 90 }}
+            />
+          )}
+          {period === "range" && (
+            <span className="flex" style={{ gap: 6, alignItems: "center" }}>
+              <input
+                type="date"
+                aria-label="From date"
+                value={fromVal}
+                onChange={(e) => setFromVal(e.target.value)}
+                style={ctrlStyle}
+              />
+              <span className="muted small">to</span>
+              <input
+                type="date"
+                aria-label="To date"
+                value={toVal}
+                onChange={(e) => setToVal(e.target.value)}
+                style={ctrlStyle}
+              />
+            </span>
+          )}
         </div>
       </div>
 
