@@ -86,7 +86,17 @@ printf "${RED} Back up your data first if you want to keep it.${RST}\n"
 if [ "$ASSUME_YES" -ne 1 ]; then
   printf "\n${BOLD}${RED}Type 'yes' to permanently delete your interview records: ${RST}"
   REPLY=""
-  if [ -r /dev/tty ]; then read -r REPLY < /dev/tty; else read -r REPLY || true; fi
+  got=1
+  if read -r REPLY < /dev/tty 2>/dev/null; then
+    got=0
+  elif [ -t 0 ] && read -r REPLY; then
+    got=0
+  fi
+  if [ "$got" -ne 0 ]; then
+    printf "\n${YLW}! No interactive terminal detected, so I can't ask for confirmation.${RST}\n"
+    printf "${DIM}  Re-run in a real terminal, or (only if you're sure) skip the prompt with:${RST} ${BOLD}./destroy.sh -y${RST}\n"
+    exit 1
+  fi
   case "$REPLY" in
     yes | YES) : ;;
     *) printf "${YLW}Aborted — nothing was removed.${RST}\n"; exit 0 ;;

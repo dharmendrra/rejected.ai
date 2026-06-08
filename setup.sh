@@ -127,7 +127,21 @@ printf "   ${DIM}May also prompt for your password (sudo) for system installs.${
 if [ "$ASSUME_YES" -ne 1 ]; then
   printf "\n${BOLD}Proceed? [y/N] ${RST}"
   REPLY=""
-  if [ -r /dev/tty ]; then read -r REPLY < /dev/tty; else read -r REPLY || true; fi
+  got=1
+  # Prefer /dev/tty (works even when stdin is piped); fall back to stdin if it's
+  # a terminal. We treat a FAILED read (no usable terminal) differently from a
+  # successful read of "no" — so a non-interactive run gets a clear hint, not a
+  # silent abort. 2>/dev/null hides the "Device not configured" noise.
+  if read -r REPLY < /dev/tty 2>/dev/null; then
+    got=0
+  elif [ -t 0 ] && read -r REPLY; then
+    got=0
+  fi
+  if [ "$got" -ne 0 ]; then
+    printf "\n${YLW}! No interactive terminal detected, so I can't ask for confirmation.${RST}\n"
+    printf "${DIM}  Re-run in a real terminal, or skip the prompt with:${RST} ${BOLD}./setup.sh -y${RST}\n"
+    exit 1
+  fi
   case "$REPLY" in
     y | Y | yes | YES) : ;;
     *) printf "${YLW}Aborted — nothing was installed.${RST}\n"; exit 0 ;;
