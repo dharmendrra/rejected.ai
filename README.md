@@ -154,16 +154,30 @@ needs (Go, Node, MongoDB, Ollama + the model, Go modules, frontend npm deps), sh
 (percentages + download speed) for the heavy steps, and is safe to re-run:
 
 ```bash
-bash setup.sh
+./setup.sh          # or: bash setup.sh
 ```
 
-When it finishes it **prints the two commands to start the app** (it does not start them
-for you). Use `bash setup.sh -y` to skip the confirmation prompt.
+> Note the filename is `setup.sh` (run `./setup.sh`, not `./setup`). The scripts are
+> committed executable, so `./setup.sh` works; `bash setup.sh` works too.
 
-To undo it later, `bash destroy.sh` removes the project database, the pulled model, app
-artifacts, and stops the services (it confirms first and lists what it'll remove). Add
-`--purge` to also uninstall the MongoDB & Ollama apps. It leaves shared tools (Go, Node,
-Homebrew) untouched.
+On a clean machine it downloads **~11–12 GB total** (mostly the one-time ~9.6 GB Ollama
+model); already-installed pieces are skipped, so repeat runs are far smaller. It does
+**not** start anything — when it finishes it **prints the two commands to start the app**.
+Use `./setup.sh -y` to skip the confirmation prompt.
+
+### Teardown
+
+To undo it later:
+
+```bash
+./destroy.sh        # or: bash destroy.sh
+```
+
+It shows a red warning that **this permanently deletes your saved interview records**,
+requires you to type `yes`, then drops the project database, removes the pulled model,
+deletes app artifacts, and stops the services. Add `--purge` to also uninstall the
+MongoDB & Ollama apps (and back up + remove `config.json`). It leaves shared tools
+(Go, Node, Homebrew) untouched.
 
 > Prefer to do it by hand? The manual, step-by-step setup is below.
 
