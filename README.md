@@ -15,7 +15,7 @@ flowchart TD
     %% Subgraph 1: Ingestion Pipeline
     subgraph Phase1["① Ingestion & Baseline Setup"]
         direction LR
-        JD["Job Description<br>(Raw Text / Paste)"] --> IngestService["Ingestion Service<br>(Backend server :8080)"]
+        JD["Job Description<br>(Raw Text / Paste)"] --> IngestService["Ingestion Service<br>(Backend server :8090)"]
         CV["Candidate Resume<br>(Raw Text / Upload)"] --> IngestService
         IngestService -->|structure & parse| LLMGen["Ollama / Claude<br>(Gemma / Sonnet)"]
         IngestService -->|upsert baseline graphs| DBGraphs[("MongoDB Store<br>(capability_graphs)")]
@@ -24,7 +24,7 @@ flowchart TD
     %% Subgraph 2: Interview Evidence Loop
     subgraph Phase2["② Interview Evidence Loop"]
         direction TB
-        GraphsQuery["Query low confidence Gaps"] --> ServerOrch["Server Orchestrator<br>(:8080)"]
+        GraphsQuery["Query low confidence Gaps"] --> ServerOrch["Server Orchestrator<br>(:8090)"]
         ServerOrch -->|generate question| LLMGenLoop["Ollama / Claude<br>(Gemma / Sonnet)"]
         LLMGenLoop -->|next question| RunnerUI["Frontend Runner UI<br>(Next.js Page)"]
         RunnerUI -->|submit answer| ServerOrch
@@ -120,7 +120,7 @@ The platform consists of several orchestrating services and LLM agents:
 
 | Port | Service | Description |
 |---|---|---|
-| `8080` | Go Backend Server | REST API orchestration, database queries, and LLM calls. |
+| `8090` | Go Backend Server | REST API orchestration, database queries, and LLM calls. |
 | `3000` | Next.js Frontend UI | Dashboard application for running interviews and viewing reports. |
 | `27017` | MongoDB | Primary document database. |
 | `11434` | Ollama | Local LLM inference server. |
@@ -131,7 +131,7 @@ Config values are loaded from `config.json` in the backend root directory. Exclu
 
 | Key | Description | Default Value | Required? |
 |---|---|---|---|
-| `SERVER_ADDR` | Bind address for Go server | `":8080"` | No |
+| `SERVER_ADDR` | Bind address for Go server | `":8090"` | No |
 | `MONGO_URI` | MongoDB Connection URI | `"mongodb://localhost:27017"` | No |
 | `MONGO_DB` | MongoDB Database name | `"rejected_ai"` | No |
 | `LLM_BACKEND` | LLM generation backend (`"ollama"` or `"anthropic"`) | `"ollama"` | No |
@@ -170,7 +170,7 @@ Use `./setup.sh -y` to skip the confirmation prompt.
 To undo it later:
 
 ```bash
-./destroy.sh        # or: bash destroy.sh
+./teardown.sh        # or: bash teardown.sh
 ```
 
 It shows a red warning that **this permanently deletes your saved interview records**,
@@ -211,9 +211,9 @@ Ensure MongoDB and Ollama are running, then execute:
 go build -o bin/server ./cmd/server
 ./bin/server
 ```
-The server will bind to port `8080`. Verify health:
+The server will bind to port `8090`. Verify health:
 ```bash
-curl -s http://localhost:8080/healthz
+curl -s http://localhost:8090/healthz
 # {"llm_backend":"ollama","llm_model":"gemma4:e4b","mongo":"ok","status":"ok"}
 ```
 

@@ -37,7 +37,7 @@ report verdict is a *practice signal*, not a real hiring decision.
 ```bash
 # prereqs: mongod on :27017, ollama on :11434 (ollama pull gemma4:e4b)
 cp config.example.json config.json            # first time
-go build -o bin/server ./cmd/server && ./bin/server   # backend :8080
+go build -o bin/server ./cmd/server && ./bin/server   # backend :8090
 cd web && npm install && npm run dev                  # frontend :3000
 go test ./...                                          # backend tests
 go build ./... && go vet ./...                         # build + vet

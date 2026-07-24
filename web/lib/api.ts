@@ -1,5 +1,5 @@
 // Typed client for the rejected.ai Go backend.
-const BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+const BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8090";
 
 // ─── Types (mirror internal/domain) ──────────────────────────────────────────
 

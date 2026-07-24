@@ -70,7 +70,7 @@ func Load(path string) (*Config, error) {
 
 func (c *Config) applyDefaults() {
 	if c.ServerAddr == "" {
-		c.ServerAddr = ":8080"
+		c.ServerAddr = ":8090"
 	}
 	if c.MongoURI == "" {
 		c.MongoURI = "mongodb://localhost:27017"

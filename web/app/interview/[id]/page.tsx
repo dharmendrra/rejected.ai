@@ -213,47 +213,6 @@ export default function InterviewRunner() {
   return (
     <div className="grid sidebar">
       <div>
-        {!completed && (
-          answeredCount > 0 ? (
-            <button 
-              onClick={triggerReportAndNavigate}
-              disabled={busy}
-              className="ghost" 
-              style={{ 
-                position: "absolute", 
-                top: 24, 
-                right: 140, 
-                fontSize: "13px", 
-                padding: "6px 12px", 
-                border: "1px solid var(--border)", 
-                background: "transparent", 
-                cursor: "pointer",
-                color: "var(--text)"
-              }}
-            >
-              {busy ? "Ending..." : "🏁 End interview"}
-            </button>
-          ) : (
-            <Link href="/">
-              <button 
-                className="ghost" 
-                style={{ 
-                  position: "absolute", 
-                  top: 24, 
-                  right: 140, 
-                  fontSize: "13px", 
-                  padding: "6px 12px", 
-                  border: "1px solid var(--border)", 
-                  background: "transparent", 
-                  cursor: "pointer",
-                  color: "var(--muted)"
-                }}
-              >
-                no answers, please start fresh
-              </button>
-            </Link>
-          )
-        )}
         <div className="panel">
           <div className="flex between" style={{ alignItems: "center" }}>
             <h2>
@@ -275,6 +234,43 @@ export default function InterviewRunner() {
                 </span>
               )}
               <span className="tag">{completed ? "completed" : "active"}</span>
+              {!completed && (
+                answeredCount > 0 ? (
+                  <button 
+                    onClick={triggerReportAndNavigate}
+                    disabled={busy}
+                    className="ghost" 
+                    style={{ 
+                      fontSize: "13px", 
+                      padding: "6px 12px", 
+                      border: "1px solid var(--border)", 
+                      background: "transparent", 
+                      cursor: "pointer",
+                      borderRadius: "8px",
+                      color: "var(--text)"
+                    }}
+                  >
+                    {busy ? "Ending..." : "🏁 End interview"}
+                  </button>
+                ) : (
+                  <Link href="/">
+                    <button 
+                      className="ghost" 
+                      style={{ 
+                        fontSize: "13px", 
+                        padding: "6px 12px", 
+                        border: "1px solid var(--border)", 
+                        background: "transparent", 
+                        cursor: "pointer",
+                        borderRadius: "8px",
+                        color: "var(--muted)"
+                      }}
+                    >
+                      no answers, please start fresh
+                    </button>
+                  </Link>
+                )
+              )}
             </div>
           </div>
           {timeLeft !== null && !completed && timeLeft > 0 && (

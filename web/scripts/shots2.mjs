@@ -1,6 +1,6 @@
 // Second capture pass: report-section crops for no-hire & HR, big coaching cards,
 // home config variants, the live answering screen, and the record modal (fake camera).
-// Run:  node web/scripts/shots2.mjs   (backend :8080 + frontend :3000 must be up)
+// Run:  node web/scripts/shots2.mjs   (backend :8090 + frontend :3000 must be up)
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const { chromium } = require("/usr/local/lib/node_modules/playwright");

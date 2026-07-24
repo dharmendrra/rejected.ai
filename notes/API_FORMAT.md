@@ -1,6 +1,6 @@
 # rejected.ai — REST API Format (Phases 0–4)
 
-Base URL: `http://localhost:8080`. All bodies are JSON unless noted. Endpoints that
+Base URL: `http://localhost:8090`. All bodies are JSON unless noted. Endpoints that
 make LLM calls can take many seconds with the local Ollama model.
 
 ## `GET /healthz`

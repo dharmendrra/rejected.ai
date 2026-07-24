@@ -1,5 +1,5 @@
 {
-  "SERVER_ADDR": ":8080",
+  "SERVER_ADDR": ":8090",
 
   "MONGO_URI": "mongodb://localhost:27017",
   "MONGO_DB": "rejected_ai",

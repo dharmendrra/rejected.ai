@@ -1,13 +1,13 @@
 // Screenshot capture for the rejected.ai video brief.
 // Run:  node web/scripts/shots.mjs
-// Requires backend (:8080) and frontend (:3000) running, and the global
+// Requires backend (:8090) and frontend (:3000) running, and the global
 // playwright module (resolved by absolute path below).
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const { chromium } = require("/usr/local/lib/node_modules/playwright");
 
 const BASE = "http://localhost:3000";
-const API = "http://localhost:8080";
+const API = "http://localhost:8090";
 const OUT = "screenshots";
 
 const STRONG_HIRE = "6a266fdf42cce3ef133a91ed"; // Alex Mercer

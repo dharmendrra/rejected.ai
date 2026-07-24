@@ -8,10 +8,10 @@
 # confidence-evolution timeline and any RETROACTIVE evidence revisions — the
 # defining behavior: earlier shorthand reinterpreted in light of later answers.
 #
-# Prereqs: server running on :8080, mongod up, ollama serving the configured model, jq.
+# Prereqs: server running on :8090, mongod up, ollama serving the configured model, jq.
 set -euo pipefail
 
-BASE="${BASE:-http://localhost:8080}"
+BASE="${BASE:-http://localhost:8090}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 say() { printf "\n\033[1;36m== %s ==\033[0m\n" "$1"; }

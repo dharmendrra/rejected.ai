@@ -100,7 +100,7 @@ Indexes are created by `store.EnsureIndexes`; the dominant access pattern is
 cp config.example.json config.json   # already present
 go build -o bin/server ./cmd/server
 ./bin/server
-curl -s localhost:8080/healthz
+curl -s localhost:8090/healthz
 # -> {"llm_backend":"ollama","llm_model":"gemma4:e4b","mongo":"ok","status":"ok"}
 ```
 

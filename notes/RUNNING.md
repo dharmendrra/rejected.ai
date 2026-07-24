@@ -14,8 +14,8 @@
 ```bash
 cp config.example.json config.json   # already present
 go build -o bin/server ./cmd/server
-./bin/server                          # serves :8080, CORS open for the UI
-curl -s localhost:8080/healthz
+./bin/server                          # serves :8090, CORS open for the UI
+curl -s localhost:8090/healthz
 ```
 
 Switch to Anthropic: set `"LLM_BACKEND": "anthropic"` + `"ANTHROPIC_API_KEY"` in `config.json`.

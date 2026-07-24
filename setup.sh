@@ -277,5 +277,5 @@ ${BOLD}Now start the app yourself — two terminals:${RST}
     ${CYN}cd "$REPO_DIR/web" && npm run dev${RST}
 
 Then open ${BOLD}http://localhost:3000${RST}
-(backend health: ${DIM}curl http://localhost:8080/healthz${RST})
+(backend health: ${DIM}curl http://localhost:8090/healthz${RST})
 EOF

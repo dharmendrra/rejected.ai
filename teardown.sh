@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# destroy.sh — undo what setup.sh did for rejected.ai.
+# teardown.sh — undo what setup.sh did for rejected.ai.
 #
-#   Usage:   bash destroy.sh            # remove project data, model, artifacts; stop services
-#            bash destroy.sh --purge    # ALSO uninstall the MongoDB & Ollama apps + delete config.json
-#            bash destroy.sh -y         # skip the confirmation prompt
+#   Usage:   bash teardown.sh            # remove project data, model, artifacts; stop services
+#            bash teardown.sh --purge    # ALSO uninstall the MongoDB & Ollama apps + delete config.json
+#            bash teardown.sh -y         # skip the confirmation prompt
 #
 # By design it does NOT uninstall shared developer tools (Go, Node.js, Homebrew) —
 # removing those would break your other projects. It prints how to remove them
@@ -94,7 +94,7 @@ if [ "$ASSUME_YES" -ne 1 ]; then
   fi
   if [ "$got" -ne 0 ]; then
     printf "\n${YLW}! No interactive terminal detected, so I can't ask for confirmation.${RST}\n"
-    printf "${DIM}  Re-run in a real terminal, or (only if you're sure) skip the prompt with:${RST} ${BOLD}./destroy.sh -y${RST}\n"
+    printf "${DIM}  Re-run in a real terminal, or (only if you're sure) skip the prompt with:${RST} ${BOLD}./teardown.sh -y${RST}\n"
     exit 1
   fi
   case "$REPLY" in
