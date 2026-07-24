@@ -146,6 +146,22 @@ Config values are loaded from `config.json` in the backend root directory. Exclu
 | `WHISPER_MODEL` | Path to Whisper model file | `""` | No |
 | `VIDEO_DETECTOR_BIN`| Path to external video metrics CLI | `""` | No (fallback to metadata upload) |
 
+## Quick Start (automated)
+
+From the repo root, run the setup script — it checks/installs everything the project
+needs (Go, Node, MongoDB, Ollama + the model, Go modules, frontend npm deps), shows an
+**estimated download size and asks for confirmation first**, streams live progress
+(percentages + download speed) for the heavy steps, and is safe to re-run:
+
+```bash
+bash setup.sh
+```
+
+When it finishes it **prints the two commands to start the app** (it does not start them
+for you). Use `bash setup.sh -y` to skip the confirmation prompt.
+
+> Prefer to do it by hand? The manual, step-by-step setup is below.
+
 ## Installation
 
 ### Backend Setup
