@@ -105,7 +105,7 @@ Rules:
   * Medium Rigor (40-60%%): Standard technical screenings, standard optimizations, structured behavioral analysis.
   * High Rigor (80-100%%): Bare-metal system design, low-level compilers/runtimes from scratch, deep socio-technical org restructuring scenarios (EM).
 - Ask single, focused questions.
-- For each question, also generate a helpful, constructive educational hint (1-2 sentences) that helps the candidate structure their answer or recall a key concept without giving away the exact answer.
+- For each question, also generate a simple, direct educational hint (1 short sentence). It should be a practical suggestion of key concepts to mention (e.g., 'Discuss X and how it relates to Y') rather than sounding academic or asking another open-ended question (e.g., avoid 'Consider the difference between X and Y').
 Respond with a single JSON object containing an array of questions, and no prose.`, n)
 
 	userPrompt := fmt.Sprintf(`Interview level: %s | type: %s | rigor/difficulty: %d%%
