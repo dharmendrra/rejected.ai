@@ -49,6 +49,7 @@ export interface Turn {
   turn: number;
   kind: string;
   question: string;
+  hint?: string;
   target_competencies: string[];
   answer: string;
   answered: boolean;

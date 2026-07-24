@@ -29,6 +29,7 @@ export default function InterviewRunner() {
   const [recordBusy, setRecordBusy] = useState(false);
   const [recordDuration, setRecordDuration] = useState(0);
   const [recordStartTime, setRecordStartTime] = useState<number>(0);
+  const [showHint, setShowHint] = useState(false);
   
   const recordStartTimeRef = useRef<number>(0);
 
@@ -79,6 +80,10 @@ export default function InterviewRunner() {
 
   const openTurn = useMemo(() => view?.turns.find((t) => !t.answered), [view]);
   const latest = useMemo(() => latestByCompetency(view?.confidence || []), [view]);
+
+  useEffect(() => {
+    setShowHint(false);
+  }, [openTurn?.id]);
 
   async function submit() {
     if (!answer.trim()) return;
@@ -330,6 +335,39 @@ export default function InterviewRunner() {
                   </button>
                   {busy && <span className="note" style={{ marginLeft: 10 }}>recording answer…</span>}
                 </div>
+
+                {openTurn.hint && (
+                  <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px dashed var(--border)" }}>
+                    {showHint ? (
+                      <div 
+                        style={{ 
+                          padding: "10px 14px", 
+                          background: "var(--panel-2)", 
+                          borderRadius: "6px", 
+                          borderLeft: "3px solid var(--accent)",
+                          fontSize: "14px",
+                          lineHeight: "1.4"
+                        }}
+                      >
+                        <strong>💡 Hint:</strong> {openTurn.hint}
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => setShowHint(true)}
+                        className="ghost"
+                        style={{ 
+                          fontSize: "12px", 
+                          padding: "4px 8px", 
+                          cursor: "pointer", 
+                          borderColor: "var(--border)",
+                          color: "var(--accent)"
+                        }}
+                      >
+                        💡 Reveal Hint
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div>
@@ -388,6 +426,39 @@ export default function InterviewRunner() {
             <p style={{ fontWeight: 600, fontSize: "14px", marginBottom: "16px", color: "var(--text)" }}>
               &ldquo;{openTurn?.question}&rdquo;
             </p>
+            {openTurn?.hint && (
+              <div style={{ marginBottom: "16px" }}>
+                {showHint ? (
+                  <div 
+                    style={{ 
+                      padding: "8px 12px", 
+                      background: "var(--panel-2)", 
+                      borderRadius: "6px", 
+                      borderLeft: "3px solid var(--accent)",
+                      fontSize: "13px",
+                      lineHeight: "1.4",
+                      color: "var(--text)"
+                    }}
+                  >
+                    <strong>💡 Hint:</strong> {openTurn.hint}
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setShowHint(true)}
+                    className="ghost"
+                    style={{ 
+                      fontSize: "11px", 
+                      padding: "3px 6px", 
+                      cursor: "pointer", 
+                      borderColor: "var(--border)",
+                      color: "var(--accent)"
+                    }}
+                  >
+                    💡 Reveal Hint
+                  </button>
+                )}
+              </div>
+            )}
 
             <div className="video-container">
               {recording && (

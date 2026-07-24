@@ -105,6 +105,7 @@ Rules:
   * Medium Rigor (40-60%%): Standard technical screenings, standard optimizations, structured behavioral analysis.
   * High Rigor (80-100%%): Bare-metal system design, low-level compilers/runtimes from scratch, deep socio-technical org restructuring scenarios (EM).
 - Ask single, focused questions.
+- For each question, also generate a helpful, constructive educational hint (1-2 sentences) that helps the candidate structure their answer or recall a key concept without giving away the exact answer.
 Respond with a single JSON object containing an array of questions, and no prose.`, n)
 
 	userPrompt := fmt.Sprintf(`Interview level: %s | type: %s | rigor/difficulty: %d%%
@@ -118,6 +119,7 @@ Generate the list of questions as JSON:
   "questions": [
     {
       "question": string,
+      "hint": string,
       "target_competencies": string[]
     }
   ]
@@ -126,6 +128,7 @@ Generate the list of questions as JSON:
 	var res struct {
 		Questions []struct {
 			Question           string   `json:"question"`
+			Hint               string   `json:"hint"`
 			TargetCompetencies []string `json:"target_competencies"`
 		} `json:"questions"`
 	}
@@ -141,6 +144,7 @@ Generate the list of questions as JSON:
 			Turn:               i + 1,
 			Kind:               domain.TurnQuestion,
 			Question:           strings.TrimSpace(q.Question),
+			Hint:               strings.TrimSpace(q.Hint),
 			TargetCompetencies: q.TargetCompetencies,
 			AskedAt:            time.Now().UTC(),
 		}

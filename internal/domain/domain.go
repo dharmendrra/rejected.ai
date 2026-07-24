@@ -117,6 +117,7 @@ type Turn struct {
 	Turn               int           `bson:"turn" json:"turn"` // 1-based sequence
 	Kind               string        `bson:"kind" json:"kind"`
 	Question           string        `bson:"question" json:"question"`
+	Hint               string        `bson:"hint,omitempty" json:"hint,omitempty"`
 	TargetCompetencies []string      `bson:"target_competencies" json:"target_competencies"`
 	Answer             string        `bson:"answer" json:"answer"`
 	Answered           bool          `bson:"answered" json:"answered"`
