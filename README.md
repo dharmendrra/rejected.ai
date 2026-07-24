@@ -160,6 +160,11 @@ bash setup.sh
 When it finishes it **prints the two commands to start the app** (it does not start them
 for you). Use `bash setup.sh -y` to skip the confirmation prompt.
 
+To undo it later, `bash destroy.sh` removes the project database, the pulled model, app
+artifacts, and stops the services (it confirms first and lists what it'll remove). Add
+`--purge` to also uninstall the MongoDB & Ollama apps. It leaves shared tools (Go, Node,
+Homebrew) untouched.
+
 > Prefer to do it by hand? The manual, step-by-step setup is below.
 
 ## Installation
