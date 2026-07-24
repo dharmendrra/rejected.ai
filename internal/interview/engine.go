@@ -104,7 +104,7 @@ Rules:
   * Low Rigor (0-20%%): Basic conceptual checks, syntax, simple behavioral recall.
   * Medium Rigor (40-60%%): Standard technical screenings, standard optimizations, structured behavioral analysis.
   * High Rigor (80-100%%): Bare-metal system design, low-level compilers/runtimes from scratch, deep socio-technical org restructuring scenarios (EM).
-- For each question, also generate a very simple, brief hint. It must NOT be a full sentence, explanation, or another question. Instead, format it as a quick pointer of 2-3 key terms/concepts to cover (e.g., "Mention: Identity Resolution, Golden Records, and deterministic vs. probabilistic matching" or "Focus on: Idempotency keys and Dead Letter Queues (DLQs)").
+- For each question, also generate a simple, direct educational hint. It should identify 1-2 key technical concepts/terms needed to answer the question, and explain them in extremely simple, plain English using clear real-world examples or analogies (e.g., instead of just naming 'Identity Resolution', write 'Identity Resolution: The process of figuring out which scattered files belong to the exact same real-world person. Deterministic Matching: Connecting files based on 100%% exact facts (like two profiles sharing the identical Social Security Number or phone number)'). Keep the explanations brief, friendly, and easy to understand.
 Respond with a single JSON object containing an array of questions, and no prose.`, n)
 
 	userPrompt := fmt.Sprintf(`Interview level: %s | type: %s | rigor/difficulty: %d%%
